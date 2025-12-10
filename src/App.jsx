@@ -62,50 +62,133 @@ const INITIAL_DATA = [
     notes: [],
     tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
   },
-  // --- UPDATED RODI FILTERS (1-6) ---
   {
-    id: 801, name: "Filter 1", category: "rodi", type: "Sediment", size: "Stage 1",
+    id: 8, name: "Basement System", category: "rodi", type: "Filter", size: "System",
     notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 802, name: "Filter 2", category: "rodi", type: "Carbon Block", size: "Stage 2",
-    notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 803, name: "Filter 3", category: "rodi", type: "Carbon Block", size: "Stage 3",
-    notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 804, name: "Filter 4", category: "rodi", type: "RO Membrane", size: "Stage 4",
-    notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 730, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 805, name: "Filter 5", category: "rodi", type: "Deionization", size: "Stage 5",
-    notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 90, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 806, name: "Filter 6", category: "rodi", type: "Polishing", size: "Stage 6",
-    notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
+    tasks: [{ name: "Change Sediment Filter", frequency: 180, lastCompleted: null, history: [] }]
   }
 ];
 
+// --- ADD ITEM MODAL COMPONENT ---
+const AddItemModal = ({ isOpen, onClose, onAdd }) => {
+  const [formData, setFormData] = useState({
+    name: '',
+    category: 'home',
+    type: '',
+    size: '',
+    frequency: 7
+  });
+
+  if (!isOpen) return null;
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    onAdd(formData);
+    onClose();
+    setFormData({ name: '', category: 'home', type: '', size: '', frequency: 7 }); // Reset
+  };
+
+  // Determine placeholder text based on category
+  const isPlant = formData.category === 'plants';
+  const sizeLabel = isPlant ? "Size (e.g. Small Pot)" : "Size (e.g. 90 Gallon)";
+  const typeLabel = isPlant ? "Type (e.g. Succulent)" : "Type (e.g. Saltwater)";
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h2>Add New Item</h2>
+          <button onClick={onClose} style={{border:'none', background:'none', cursor:'pointer'}}><X size={24}/></button>
+        </div>
+        
+        <form onSubmit={handleSubmit}>
+          <div className="form-group">
+            <label className="form-label">Category</label>
+            <select name="category" value={formData.category} onChange={handleChange} className="form-select">
+              <option value="home">Home Aquarium</option>
+              <option value="plants">Plant</option>
+              <option value="meemaw">Meemaw's Tank</option>
+              <option value="hermit">Hermit Crab</option>
+              <option value="rodi">RODI Filter</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Name</label>
+            <input 
+              name="name" 
+              placeholder="e.g. Living Room Tank" 
+              value={formData.name} 
+              onChange={handleChange} 
+              className="form-input" 
+              required 
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{typeLabel}</label>
+            <input 
+              name="type" 
+              placeholder={isPlant ? "Houseplant" : "Freshwater"} 
+              value={formData.type} 
+              onChange={handleChange} 
+              className="form-input" 
+              required 
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">{sizeLabel}</label>
+            <input 
+              name="size" 
+              placeholder={isPlant ? "Pot" : "75 Gallon"} 
+              value={formData.size} 
+              onChange={handleChange} 
+              className="form-input" 
+              required 
+            />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">Task Frequency (Days)</label>
+            <input 
+              type="number" 
+              name="frequency" 
+              value={formData.frequency} 
+              onChange={handleChange} 
+              className="form-input" 
+              min="1"
+              required 
+            />
+          </div>
+
+          <div className="modal-actions">
+            <button type="button" onClick={onClose} className="btn btn-secondary">Cancel</button>
+            <button type="submit" className="btn btn-primary">Create</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // V14 to load new RODI filters
-    const saved = localStorage.getItem('aquariumDataV14'); 
+    // V15
+    const saved = localStorage.getItem('aquariumDataV15'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  const [isAddModalOpen, setAddModalOpen] = useState(false); // State for modal
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV14', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV15', JSON.stringify(tanks));
   }, [tanks]);
 
   const handleComplete = (tankId, taskIndex, side = null) => {
@@ -163,10 +246,37 @@ function App() {
     setTanks(newTanks);
   };
 
+  // --- HANDLE NEW ITEM CREATION ---
+  const handleAddItem = (formData) => {
+    // Determine default task name based on category
+    let taskName = "Water Change";
+    if (formData.category === 'plants') taskName = "Watering";
+    if (formData.category === 'rodi') taskName = "Replace Filter";
+
+    const newItem = {
+      id: Date.now(), // Generate unique ID
+      name: formData.name,
+      category: formData.category,
+      type: formData.type,
+      size: formData.size,
+      notes: [],
+      tasks: [
+        { 
+          name: taskName, 
+          frequency: parseInt(formData.frequency), 
+          lastCompleted: null, 
+          history: [] 
+        }
+      ]
+    };
+
+    setTanks([...tanks, newItem]);
+  };
+
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV14');
+      localStorage.removeItem('aquariumDataV15');
     }
   };
 
@@ -175,6 +285,13 @@ function App() {
       <div className="app-container">
         {isSidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>}
         
+        {/* ADD ITEM MODAL */}
+        <AddItemModal 
+          isOpen={isAddModalOpen} 
+          onClose={() => setAddModalOpen(false)} 
+          onAdd={handleAddItem} 
+        />
+
         <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <h1>Tank Tracker</h1>
@@ -224,6 +341,11 @@ function App() {
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
+
+          {/* FLOATING ACTION BUTTON */}
+          <button className="fab-add" onClick={() => setAddModalOpen(true)}>
+            <Plus size={32} />
+          </button>
         </main>
       </div>
     </Router>
