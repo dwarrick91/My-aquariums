@@ -42,12 +42,17 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
           style={{height:'100%', paddingBottom:'40px'}}
         >
           {tanks.map((tank) => {
-            // Find the Water Change task
+            // 1. Find the Water Change task
             const wcTaskIndex = tank.tasks.findIndex(t => t.name.toLowerCase().includes("water change"));
             const wcTask = wcTaskIndex >= 0 ? tank.tasks[wcTaskIndex] : null;
 
-            // Check if this specific tank needs Left/Right buttons
+            // 2. Check if this specific tank needs Left/Right buttons
             const isLargeTank = parseInt(tank.size) > 29;
+
+            // 3. Find the LAST SIDE used (from history)
+            // We check the history array. Since we prepend new items, index 0 is the latest.
+            const latestHistory = wcTask && wcTask.history && wcTask.history.length > 0 ? wcTask.history[0] : null;
+            const lastSide = latestHistory ? latestHistory.side : null;
 
             return (
               <SwiperSlide key={tank.id} style={{
@@ -70,15 +75,24 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
                 </div>
 
                 <div style={{padding:'2rem', flex:1, display:'flex', flexDirection:'column'}}>
+                  
+                  {/* --- SUMMARY BOX --- */}
                   <div style={{background:'#f8fafc', padding:'1rem', borderRadius:'0.75rem', border:'1px solid #e2e8f0', textAlign:'center', marginBottom:'auto'}}>
                     <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b', textTransform:'uppercase', margin:0}}>Last Water Change</p>
                     <p style={{fontSize:'1.25rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0 0'}}>
                       {wcTask && wcTask.lastCompleted 
-                        ? new Date(wcTask.lastCompleted).toLocaleDateString() 
+                        ? (
+                            <span>
+                              {new Date(wcTask.lastCompleted).toLocaleDateString()}
+                              {/* DISPLAY SIDE IF EXISTS */}
+                              {lastSide && <span style={{marginLeft:'8px', color:'#64748b', fontWeight:'normal'}}>({lastSide})</span>}
+                            </span>
+                          )
                         : 'Never'}
                     </p>
                   </div>
                   
+                  {/* --- BUTTONS --- */}
                   {wcTask && (
                     <div style={{marginTop:'2rem'}}>
                       {isLargeTank ? (
