@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
-import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, MessageSquare, Download, Upload } from 'lucide-react';
+import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, MessageSquare, Download, Upload, Pencil } from 'lucide-react'; // Added Pencil
 import SwipeView from './SwipeView';
 import './App.css';
 
@@ -11,7 +11,7 @@ const INITIAL_DATA = [
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
     notes: [],
     tasks: [
-      { name: "Water Change (20%)", frequency: 7, lastCompleted: null, history: [] },
+      { name: "Water Change", frequency: 7, lastCompleted: null, history: [] },
       { name: "Clean Canister Filters", frequency: 30, lastCompleted: null, history: [] }
     ]
   },
@@ -19,7 +19,7 @@ const INITIAL_DATA = [
     id: 2, name: "Saltwater Reef", category: "home", type: "Saltwater", size: "29 Gallon",
     notes: [],
     tasks: [
-      { name: "Water Change (10%)", frequency: 7, lastCompleted: null, history: [] },
+      { name: "Water Change", frequency: 7, lastCompleted: null, history: [] },
       { name: "Empty Skimmer Cup", frequency: 3, lastCompleted: null, history: [] },
       { name: "Check Salinity", frequency: 7, lastCompleted: null, history: [] }
     ]
@@ -28,19 +28,19 @@ const INITIAL_DATA = [
     id: 3, name: "Community Tank", category: "home", type: "Freshwater", size: "50 Gallon",
     notes: [],
     tasks: [
-      { name: "Water Change (25%)", frequency: 7, lastCompleted: null, history: [] },
+      { name: "Water Change", frequency: 7, lastCompleted: null, history: [] },
       { name: "Rinse Sponge Media", frequency: 14, lastCompleted: null, history: [] }
     ]
   },
   {
     id: 4, name: "Betta Tank", category: "home", type: "Freshwater", size: "3 Gallon",
     notes: [],
-    tasks: [{ name: "Water Change (50%)", frequency: 7, lastCompleted: null, history: [] }]
+    tasks: [{ name: "Water Change", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
     id: 5, name: "Meemaw's Cichlids", category: "meemaw", type: "Cichlid", size: "65 Gallon",
     notes: [],
-    tasks: [{ name: "Water Change (25%)", frequency: 7, lastCompleted: null, history: [] }]
+    tasks: [{ name: "Water Change", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
     id: 6, name: "Jackson's Hermit Crabs", category: "hermit", type: "Terrarium", size: "55 Gallon",
@@ -94,15 +94,38 @@ const INITIAL_DATA = [
   }
 ];
 
-// --- ADD ITEM MODAL COMPONENT ---
-const AddItemModal = ({ isOpen, onClose, onAdd }) => {
-  const [formData, setFormData] = useState({
+// --- UNIVERSAL ITEM MODAL (Add & Edit) ---
+const ItemModal = ({ isOpen, onClose, onSave, itemToEdit }) => {
+  // Default State
+  const defaultState = {
     name: '',
     category: 'home',
     type: '',
     size: '',
     frequency: 7
-  });
+  };
+
+  const [formData, setFormData] = useState(defaultState);
+
+  // When opening, check if we are Editing or Adding
+  useEffect(() => {
+    if (isOpen) {
+      if (itemToEdit) {
+        // EDIT MODE: Populate form with existing data
+        setFormData({
+          name: itemToEdit.name,
+          category: itemToEdit.category,
+          type: itemToEdit.type,
+          size: itemToEdit.size,
+          // Grab frequency from the first task (usually Water Change)
+          frequency: itemToEdit.tasks[0]?.frequency || 7
+        });
+      } else {
+        // ADD MODE: Reset to default
+        setFormData(defaultState);
+      }
+    }
+  }, [isOpen, itemToEdit]);
 
   if (!isOpen) return null;
 
@@ -113,20 +136,21 @@ const AddItemModal = ({ isOpen, onClose, onAdd }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onAdd(formData);
+    onSave(formData);
     onClose();
-    setFormData({ name: '', category: 'home', type: '', size: '', frequency: 7 }); 
   };
 
   const isPlant = formData.category === 'plants';
   const sizeLabel = isPlant ? "Size (e.g. Small Pot)" : "Size (e.g. 90 Gallon)";
   const typeLabel = isPlant ? "Type (e.g. Succulent)" : "Type (e.g. Saltwater)";
+  const modalTitle = itemToEdit ? "Edit Item" : "Add New Item";
+  const buttonText = itemToEdit ? "Save Changes" : "Create";
 
   return (
     <div className="modal-overlay">
       <div className="modal-content">
         <div className="modal-header">
-          <h2>Add New Item</h2>
+          <h2>{modalTitle}</h2>
           <button onClick={onClose} style={{border:'none', background:'none', cursor:'pointer'}}><X size={24}/></button>
         </div>
         
@@ -164,7 +188,7 @@ const AddItemModal = ({ isOpen, onClose, onAdd }) => {
 
           <div className="modal-actions">
             <button type="button" onClick={onClose} className="btn btn-secondary">Cancel</button>
-            <button type="submit" className="btn btn-primary">Create</button>
+            <button type="submit" className="btn btn-primary">{buttonText}</button>
           </div>
         </form>
       </div>
@@ -174,22 +198,77 @@ const AddItemModal = ({ isOpen, onClose, onAdd }) => {
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // V15
-    const saved = localStorage.getItem('aquariumDataV15'); 
+    // V16
+    const saved = localStorage.getItem('aquariumDataV16'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isAddModalOpen, setAddModalOpen] = useState(false);
   
-  // Hidden input for file uploading
+  // MODAL STATES
+  const [isModalOpen, setModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState(null); // Tracks which item is being edited
+  
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV15', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV16', JSON.stringify(tanks));
   }, [tanks]);
 
+  // --- MODAL HANDLERS ---
+  const openAddModal = () => {
+    setEditingItem(null); // Clear editing item
+    setModalOpen(true);
+  };
+
+  const openEditModal = (item) => {
+    setEditingItem(item); // Set the item to be edited
+    setModalOpen(true);
+  };
+
   // --- DATA LOGIC ---
+  const handleSaveItem = (formData) => {
+    if (editingItem) {
+      // --- UPDATE EXISTING ITEM ---
+      setTanks(prevTanks => prevTanks.map(tank => {
+        if (tank.id === editingItem.id) {
+          // Clone the tasks array
+          const updatedTasks = [...tank.tasks];
+          // Update the frequency of the first task (Water Change)
+          if (updatedTasks.length > 0) {
+            updatedTasks[0] = { ...updatedTasks[0], frequency: parseInt(formData.frequency) };
+          }
+          
+          return {
+            ...tank,
+            name: formData.name,
+            category: formData.category,
+            type: formData.type,
+            size: formData.size,
+            tasks: updatedTasks
+          };
+        }
+        return tank;
+      }));
+    } else {
+      // --- CREATE NEW ITEM ---
+      let taskName = "Water Change";
+      if (formData.category === 'plants') taskName = "Watering";
+      if (formData.category === 'rodi') taskName = "Replace Filter";
+
+      const newItem = {
+        id: Date.now(),
+        name: formData.name,
+        category: formData.category,
+        type: formData.type,
+        size: formData.size,
+        notes: [],
+        tasks: [{ name: taskName, frequency: parseInt(formData.frequency), lastCompleted: null, history: [] }]
+      };
+      setTanks([...tanks, newItem]);
+    }
+  };
+
   const handleComplete = (tankId, taskIndex, side = null) => {
     const newTanks = [...tanks];
     const tank = newTanks.find(t => t.id === tankId);
@@ -240,37 +319,17 @@ function App() {
     setTanks(newTanks);
   };
 
-  const handleAddItem = (formData) => {
-    let taskName = "Water Change";
-    if (formData.category === 'plants') taskName = "Watering";
-    if (formData.category === 'rodi') taskName = "Replace Filter";
-
-    const newItem = {
-      id: Date.now(),
-      name: formData.name,
-      category: formData.category,
-      type: formData.type,
-      size: formData.size,
-      notes: [],
-      tasks: [{ name: taskName, frequency: parseInt(formData.frequency), lastCompleted: null, history: [] }]
-    };
-    setTanks([...tanks, newItem]);
-  };
-
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV15');
+      localStorage.removeItem('aquariumDataV16');
     }
   };
 
-  // --- BACKUP & RESTORE FUNCTIONS ---
+  // --- BACKUP & RESTORE ---
   const backupData = () => {
-    // 1. Convert state to string
     const jsonString = JSON.stringify(tanks, null, 2);
-    // 2. Create a blob (file-like object)
     const blob = new Blob([jsonString], { type: "application/json" });
-    // 3. Create a download link
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -292,7 +351,6 @@ function App() {
     reader.onload = (e) => {
       try {
         const importedData = JSON.parse(e.target.result);
-        // Basic validation: Check if it's an array
         if (Array.isArray(importedData)) {
           if(window.confirm("This will overwrite your current data with the backup. Continue?")) {
             setTanks(importedData);
@@ -306,7 +364,6 @@ function App() {
       }
     };
     reader.readAsText(file);
-    // Reset input so same file can be selected again if needed
     event.target.value = null; 
   };
 
@@ -315,9 +372,14 @@ function App() {
       <div className="app-container">
         {isSidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>}
         
-        <AddItemModal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} onAdd={handleAddItem} />
+        {/* REUSED ITEM MODAL FOR ADD & EDIT */}
+        <ItemModal 
+          isOpen={isModalOpen} 
+          onClose={() => setModalOpen(false)} 
+          onSave={handleSaveItem}
+          itemToEdit={editingItem} 
+        />
 
-        {/* HIDDEN FILE INPUT FOR RESTORE */}
         <input 
           type="file" 
           ref={fileInputRef} 
@@ -340,7 +402,6 @@ function App() {
             <Link to="/swipe/meemaw" onClick={() => setSidebarOpen(false)} className="nav-link">Meemaw's Tank</Link>
             <Link to="/swipe/rodi" onClick={() => setSidebarOpen(false)} className="nav-link">RODI</Link>
 
-            {/* --- NEW DATA SETTINGS SECTION --- */}
             <div className="section-label">Data Settings</div>
             <button onClick={backupData} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
               <Download size={18} /> Backup Data
@@ -367,7 +428,8 @@ function App() {
                   onComplete={handleComplete} 
                   onDeleteHistory={handleDeleteHistory}
                   onAddNote={handleAddNote}       
-                  onDeleteNote={handleDeleteNote} 
+                  onDeleteNote={handleDeleteNote}
+                  onEditItem={openEditModal} // Pass the edit function
                   onReset={resetData} 
                 />
               } />
@@ -383,7 +445,7 @@ function App() {
             </Routes>
           </div>
 
-          <button className="fab-add" onClick={() => setAddModalOpen(true)}>
+          <button className="fab-add" onClick={openAddModal}>
             <Plus size={32} />
           </button>
         </main>
@@ -399,7 +461,7 @@ const SwipeWrapper = ({ tanks, onComplete, onAddNote, onDeleteNote }) => {
 };
 
 // --- DASHBOARD COMPONENT ---
-const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDeleteNote, onReset }) => {
+const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDeleteNote, onEditItem, onReset }) => {
   const [expandedTankId, setExpandedTankId] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);
   const [noteInput, setNoteInput] = useState("");
@@ -412,6 +474,12 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
   const toggleHistory = (e, uniqueKey) => {
     e.stopPropagation();
     setExpandedTask(expandedTask === uniqueKey ? null : uniqueKey);
+  };
+
+  // Prevent card expansion when clicking edit button
+  const handleEditClick = (e, tank) => {
+    e.stopPropagation();
+    onEditItem(tank);
   };
 
   const submitNote = (tankId) => {
@@ -450,11 +518,24 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
           return (
             <div key={tank.id} className={`tank-card ${isOpen ? 'open' : ''}`}>
               <button onClick={() => toggleTank(tank.id)} className="card-header">
-                <div className="tank-info">
-                  <div className={`status-dot ${tankOverdueCount > 0 ? 'red' : 'green'}`} />
-                  <div className="tank-details">
-                    <h3>{tank.name}</h3>
-                    <p>{tank.size} • {tank.type}</p>
+                <div className="header-content">
+                  <div className="tank-info">
+                    <div className={`status-dot ${tankOverdueCount > 0 ? 'red' : 'green'}`} />
+                    <div className="tank-details">
+                      <div className="title-row">
+                        <h3>{tank.name}</h3>
+                        <div 
+                          role="button" 
+                          tabIndex={0}
+                          className="btn-edit-icon" 
+                          onClick={(e) => handleEditClick(e, tank)}
+                          title="Edit Name & Frequency"
+                        >
+                          <Pencil size={14} />
+                        </div>
+                      </div>
+                      <p>{tank.size} • {tank.type}</p>
+                    </div>
                   </div>
                 </div>
                 {isOpen ? <ChevronUp size={20} color="#3b82f6" /> : <ChevronDown size={20} color="#cbd5e1" />}
