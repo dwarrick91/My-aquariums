@@ -38,9 +38,9 @@ const INITIAL_DATA = [
     tasks: [{ name: "Water Change (50%)", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
-    id: 5, name: "Meemaw's Guppies", category: "meemaw", type: "Freshwater", size: "10 Gallon",
+    id: 5, name: "Meemaw's Cichlids", category: "meemaw", type: "Cichlid", size: "65 Gallon",
     notes: [],
-    tasks: [{ name: "Water Change (10%)", frequency: 7, lastCompleted: null, history: [] }]
+    tasks: [{ name: "Water Change (25%)", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
     id: 6, name: "Jackson's Hermit Crabs", category: "hermit", type: "Terrarium", size: "55 Gallon",
@@ -48,27 +48,64 @@ const INITIAL_DATA = [
     tasks: [{ name: "Water Change", frequency: 2, lastCompleted: null, history: [] }]
   },
   {
-    id: 7, name: "Living Room Monstera", category: "plants", type: "Plant", size: "Pot",
+    id: 701, name: "Living Room Plants", category: "plants", type: "Houseplant", size: "Pot",
     notes: [],
     tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
-    id: 8, name: "Basement System", category: "rodi", type: "Filter", size: "System",
+    id: 702, name: "Aloe", category: "plants", type: "Succulent", size: "Pot",
     notes: [],
-    tasks: [{ name: "Change Sediment Filter", frequency: 180, lastCompleted: null, history: [] }]
+    tasks: [{ name: "Watering", frequency: 14, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 703, name: "Bedroom Plants", category: "plants", type: "Houseplant", size: "Pot",
+    notes: [],
+    tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
+  },
+  // --- UPDATED RODI FILTERS (1-6) ---
+  {
+    id: 801, name: "Filter 1", category: "rodi", type: "Sediment", size: "Stage 1",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 802, name: "Filter 2", category: "rodi", type: "Carbon Block", size: "Stage 2",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 803, name: "Filter 3", category: "rodi", type: "Carbon Block", size: "Stage 3",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 804, name: "Filter 4", category: "rodi", type: "RO Membrane", size: "Stage 4",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 730, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 805, name: "Filter 5", category: "rodi", type: "Deionization", size: "Stage 5",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 90, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 806, name: "Filter 6", category: "rodi", type: "Polishing", size: "Stage 6",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
   }
 ];
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    const saved = localStorage.getItem('aquariumDataV11');
+    // V14 to load new RODI filters
+    const saved = localStorage.getItem('aquariumDataV14'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV11', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV14', JSON.stringify(tanks));
   }, [tanks]);
 
   const handleComplete = (tankId, taskIndex, side = null) => {
@@ -129,7 +166,7 @@ function App() {
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV11');
+      localStorage.removeItem('aquariumDataV14');
     }
   };
 
@@ -180,8 +217,8 @@ function App() {
                 <SwipeWrapper 
                   tanks={tanks} 
                   onComplete={handleComplete} 
-                  onAddNote={handleAddNote}      // Pass this down
-                  onDeleteNote={handleDeleteNote} // Pass this down
+                  onAddNote={handleAddNote}      
+                  onDeleteNote={handleDeleteNote}
                 />
               } />
               <Route path="*" element={<Navigate to="/" replace />} />
@@ -193,7 +230,6 @@ function App() {
   );
 }
 
-// Updated SwipeWrapper to accept note props
 const SwipeWrapper = ({ tanks, onComplete, onAddNote, onDeleteNote }) => {
   const { category } = useParams();
   const filteredTanks = tanks.filter(t => t.category === category);
@@ -206,11 +242,8 @@ const SwipeWrapper = ({ tanks, onComplete, onAddNote, onDeleteNote }) => {
          />;
 };
 
-// ... CleanDashboard code remains same as before ...
+// --- DASHBOARD COMPONENT ---
 const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDeleteNote, onReset }) => {
-  // (Paste the CleanDashboard code from the previous working step here, or leave as is if you already have it)
-  // For brevity, I am omitting the full CleanDashboard repetition unless you need it, 
-  // but ensure it accepts the same props as above.
   const [expandedTankId, setExpandedTankId] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);
   const [noteInput, setNoteInput] = useState("");
@@ -334,7 +367,7 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
                   })}
 
                   <div className="notes-section">
-                    <div className="notes-title">Tank Notes</div>
+                    <div className="notes-title">Notes</div>
                     <div className="note-input-group">
                       <input 
                         type="text" 
