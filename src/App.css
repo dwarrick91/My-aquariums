@@ -1,10 +1,11 @@
+/* Keep your existing ROOT variables at the top */
 :root {
   --bg-color: #f0f2f5;
   --card-bg: #ffffff;
   --fresh-accent: #2ecc71;
   --salt-accent: #3498db;
   --danger: #e74c3c;
-  --danger-bg: #fff5f5; /* Light red background for overdue */
+  --danger-bg: #fff5f5;
   --text: #2c3e50;
   --subtext: #95a5a6;
 }
@@ -66,17 +67,15 @@ header {
 }
 
 /* --- TASK WRAPPER STYLES --- */
-
 .task-wrapper {
   background: #f8f9fa;
   border-radius: 8px;
   margin-bottom: 15px;
   overflow: hidden; 
-  border-left: 5px solid transparent; /* Prepare for border transition */
+  border-left: 5px solid transparent; 
   transition: background 0.3s;
 }
 
-/* THE RED ALERT STYLE */
 .task-wrapper.overdue-wrapper {
   background-color: var(--danger-bg);
   border-left: 5px solid var(--danger);
@@ -99,8 +98,10 @@ header {
 .action-buttons {
   display: flex;
   gap: 8px;
+  align-items: center;
 }
 
+/* STANDARD BUTTON */
 .btn-complete {
   background: var(--fresh-accent);
   color: white;
@@ -117,6 +118,26 @@ header {
 
 .tank-card.saltwater .btn-complete { background: var(--salt-accent); }
 .btn-complete:hover { opacity: 0.9; }
+
+/* SPLIT BUTTONS (L / R) */
+.split-btn-group {
+  display: flex;
+  gap: 2px;
+}
+
+.btn-split-l {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  padding-right: 12px;
+  padding-left: 12px;
+}
+
+.btn-split-r {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  padding-right: 12px;
+  padding-left: 12px;
+}
 
 .btn-icon {
   background: transparent;
@@ -137,9 +158,9 @@ header {
   color: var(--text);
 }
 
-/* --- HISTORY DROPDOWN STYLES --- */
+/* --- HISTORY STYLES --- */
 .history-list {
-  background: rgba(255,255,255,0.5); /* Slightly transparent to show red bg if overdue */
+  background: rgba(255,255,255,0.5); 
   padding: 10px 15px;
   border-top: 1px solid rgba(0,0,0,0.05);
   font-size: 0.85rem;
@@ -169,7 +190,7 @@ header {
   padding: 6px 0;
   border-bottom: 1px solid rgba(0,0,0,0.05);
   display: flex;
-  justify-content: space-between; /* Pushes delete button to the right */
+  justify-content: space-between; 
   align-items: center;
 }
 
@@ -181,7 +202,17 @@ header {
   margin-left: 5px;
 }
 
-/* Delete button inside history */
+.side-badge {
+  display: inline-block;
+  background: #34495e;
+  color: white;
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-left: 8px;
+  font-weight: bold;
+}
+
 .btn-delete-entry {
   background: none;
   border: none;
