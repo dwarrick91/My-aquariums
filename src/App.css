@@ -1,141 +1,252 @@
-import React from 'react';
-import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, Navigation } from 'swiper/modules';
-import { Droplets } from 'lucide-react';
+/* --- GLOBAL RESET --- */
+* {
+  box-sizing: border-box;
+}
 
-import 'swiper/css';
-import 'swiper/css/pagination';
-import 'swiper/css/navigation';
+body {
+  margin: 0;
+  padding: 0;
+}
 
-export default function SwipeView({ tanks, onComplete, categoryName }) {
-  // Logic to show specific headers for specific categories
-  let displayTitle = categoryName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+/* --- LAYOUT CONTAINER --- */
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  background-color: #f3f4f6;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  overflow: hidden;
+}
+
+/* --- SIDEBAR (Desktop) --- */
+.sidebar {
+  width: 260px;
+  background-color: #0f172a; /* Dark Slate */
+  color: white;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  height: 100%;
+  transition: transform 0.3s ease;
+  z-index: 50;
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #334155;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: white;
+}
+
+.sidebar-nav {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  overflow-y: auto;
+}
+
+.section-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #94a3b8;
+  font-weight: bold;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  padding-left: 0.5rem;
+}
+
+.nav-link {
+  display: block;
+  padding: 0.75rem 1rem;
+  color: #cbd5e1;
+  text-decoration: none;
+  border-radius: 0.5rem;
+  transition: background 0.2s;
+}
+
+.nav-link:hover {
+  background-color: #1e293b;
+  color: white;
+}
+
+/* --- MAIN CONTENT --- */
+.main-content {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  width: 100%;
+}
+
+.mobile-header {
+  background: white;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  display: none; /* Hidden by default (Desktop) */
+}
+
+.mobile-header h2 {
+  margin: 0 0 0 1rem;
+  font-size: 1.25rem;
+  color: #1e293b;
+}
+
+.content-scroll-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem; /* Reduced padding for mobile safety */
+  width: 100%;
+}
+
+/* --- DASHBOARD STYLES --- */
+.dashboard-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding-bottom: 5rem;
+}
+
+.status-banner {
+  background: white;
+  padding: 1rem;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.status-badge {
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  font-size: 0.8rem;
+}
+
+.status-badge.green { background: #dcfce7; color: #15803d; }
+.status-badge.red { background: #fee2e2; color: #b91c1c; }
+
+.tank-card {
+  background: white;
+  border-radius: 1rem;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.tank-card.open {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: white;
+  border: none;
+  width: 100%;
+  cursor: pointer;
+}
+
+.tank-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.green { background-color: #22c55e; }
+.status-dot.red { background-color: #ef4444; }
+
+.tank-details h3 { margin: 0; font-size: 1.1rem; color: #1e293b; text-align: left; }
+.tank-details p { margin: 0; font-size: 0.85rem; color: #64748b; text-align: left; }
+
+.card-body {
+  background-color: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  padding: 1rem;
+}
+
+.task-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 0.75rem;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.btn-group { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+
+.btn {
+  flex: 1;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  font-weight: bold;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-primary { background-color: #2563eb; color: white; }
+.btn-secondary { background-color: #dbeafe; color: #1e40af; }
+.btn-reset { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 1rem; }
+
+/* --- MOBILE SPECIFIC STYLES --- */
+@media (max-width: 768px) {
+  /* 1. Fix Sidebar Hiding */
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    transform: translateX(-100%); /* Hides it off-screen */
+  }
   
-  if(categoryName === 'hermit') {
-    displayTitle = "Jackson's Hermit Crabs";
+  .sidebar.open {
+    transform: translateX(0); /* Slides it in */
   }
 
-  const containerStyle = {
-    height: '100%',
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    paddingTop: '1rem',
-    width: '100%' // Ensure container takes full width
-  };
+  /* 2. Show Mobile Header */
+  .mobile-header { display: flex; }
 
-  if (!tanks || tanks.length === 0) {
-    return (
-      <div style={{...containerStyle, justifyContent:'center', color:'#94a3b8'}}>
-        <p>No items found in {displayTitle}.</p>
-      </div>
-    );
+  /* 3. Dark Overlay for Sidebar */
+  .mobile-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 40;
   }
 
-  return (
-    <div style={containerStyle}>
-      <h2 style={{fontSize:'1.5rem', fontWeight:'bold', color:'#1e293b', marginBottom:'1.5rem', textTransform:'capitalize', textAlign: 'center'}}>
-        {displayTitle}
-      </h2>
-      
-      {/* Wrapper to control max width and centering */}
-      <div style={{width:'100%', maxWidth:'450px', height:'600px', margin: '0 auto'}}>
-        <Swiper
-          modules={[Pagination, Navigation]}
-          spaceBetween={20}
-          slidesPerView={1}
-          centeredSlides={true} // Helps with centering
-          navigation={true}
-          pagination={{ clickable: true }}
-          style={{height:'100%', paddingBottom:'40px'}}
-        >
-          {tanks.map((tank) => {
-            const wcTaskIndex = tank.tasks.findIndex(t => t.name.toLowerCase().includes("water change"));
-            const wcTask = wcTaskIndex >= 0 ? tank.tasks[wcTaskIndex] : null;
-
-            const isLargeTank = parseInt(tank.size) > 29;
-            const isTerrarium = tank.type === "Terrarium";
-            const showSideButtons = isLargeTank && !isTerrarium;
-
-            const latestHistory = wcTask && wcTask.history && wcTask.history.length > 0 ? wcTask.history[0] : null;
-            const lastSide = latestHistory ? latestHistory.side : null;
-
-            return (
-              <SwiperSlide key={tank.id} style={{
-                background: 'white',
-                borderRadius: '1rem',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-                height: '540px' 
-              }}>
-                <div style={{height:'100px', background:'linear-gradient(135deg, #2563eb, #06b6d4)'}}></div>
-                
-                <div style={{marginTop:'-40px', textAlign:'center', padding:'0 1rem'}}>
-                  <div style={{width:'80px', height:'80px', margin:'0 auto', background:'white', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', boxShadow:'0 4px 6px rgba(0,0,0,0.1)'}}>
-                    {tank.category === 'hermit' ? '🦀' : '🐠'}
-                  </div>
-                  <h3 style={{fontSize:'1.5rem', fontWeight:'bold', color:'#1e293b', margin:'1rem 0 0.5rem 0'}}>{tank.name}</h3>
-                  <span style={{color:'#64748b', fontSize:'0.875rem'}}>{tank.size} • {tank.type}</span>
-                </div>
-
-                <div style={{padding:'2rem', flex:1, display:'flex', flexDirection:'column'}}>
-                  
-                  <div style={{background:'#f8fafc', padding:'1rem', borderRadius:'0.75rem', border:'1px solid #e2e8f0', textAlign:'center', marginBottom:'auto'}}>
-                    <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b', textTransform:'uppercase', margin:0}}>Last Water Change</p>
-                    <p style={{fontSize:'1.25rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0 0'}}>
-                      {wcTask && wcTask.lastCompleted 
-                        ? (
-                            <span>
-                              {new Date(wcTask.lastCompleted).toLocaleDateString()}
-                              {lastSide && <span style={{marginLeft:'8px', color:'#64748b', fontWeight:'normal'}}>({lastSide})</span>}
-                            </span>
-                          )
-                        : 'Never'}
-                    </p>
-                  </div>
-                  
-                  {wcTask && (
-                    <div style={{marginTop:'2rem'}}>
-                      {showSideButtons ? (
-                        <div style={{display:'flex', gap:'1rem'}}>
-                          <button 
-                            onClick={() => onComplete(tank.id, wcTaskIndex, 'Left')}
-                            style={{
-                              flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'
-                            }}
-                          >
-                            Left
-                          </button>
-                          <button 
-                            onClick={() => onComplete(tank.id, wcTaskIndex, 'Right')}
-                            style={{
-                              flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'
-                            }}
-                          >
-                            Right
-                          </button>
-                        </div>
-                      ) : (
-                        <button 
-                          onClick={() => onComplete(tank.id, wcTaskIndex, null)}
-                          style={{
-                            width:'100%', padding:'1rem', background:'#2563eb', color:'white', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', boxShadow:'0 4px 6px rgba(37, 99, 235, 0.2)'
-                          }}
-                        >
-                          <Droplets size={20} />
-                          Log Water Change Today
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </SwiperSlide>
-            );
-          })}
-        </Swiper>
-      </div>
-    </div>
-  );
+  /* 4. HIDE ARROWS ON MOBILE (IMPORTANT) */
+  .swiper-button-next,
+  .swiper-button-prev {
+    display: none !important;
+  }
 }
