@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
+// 1. CHANGED: Import HashRouter instead of BrowserRouter
+import { HashRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
-import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, MessageSquare, Download, Upload, Pencil } from 'lucide-react'; // Added Pencil
+import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, MessageSquare, Download, Upload, Pencil } from 'lucide-react';
 import SwipeView from './SwipeView';
 import './App.css';
 
@@ -96,7 +97,6 @@ const INITIAL_DATA = [
 
 // --- UNIVERSAL ITEM MODAL (Add & Edit) ---
 const ItemModal = ({ isOpen, onClose, onSave, itemToEdit }) => {
-  // Default State
   const defaultState = {
     name: '',
     category: 'home',
@@ -107,21 +107,17 @@ const ItemModal = ({ isOpen, onClose, onSave, itemToEdit }) => {
 
   const [formData, setFormData] = useState(defaultState);
 
-  // When opening, check if we are Editing or Adding
   useEffect(() => {
     if (isOpen) {
       if (itemToEdit) {
-        // EDIT MODE: Populate form with existing data
         setFormData({
           name: itemToEdit.name,
           category: itemToEdit.category,
           type: itemToEdit.type,
           size: itemToEdit.size,
-          // Grab frequency from the first task (usually Water Change)
           frequency: itemToEdit.tasks[0]?.frequency || 7
         });
       } else {
-        // ADD MODE: Reset to default
         setFormData(defaultState);
       }
     }
@@ -204,41 +200,32 @@ function App() {
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  
-  // MODAL STATES
   const [isModalOpen, setModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState(null); // Tracks which item is being edited
-  
+  const [editingItem, setEditingItem] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('aquariumDataV16', JSON.stringify(tanks));
   }, [tanks]);
 
-  // --- MODAL HANDLERS ---
   const openAddModal = () => {
-    setEditingItem(null); // Clear editing item
+    setEditingItem(null); 
     setModalOpen(true);
   };
 
   const openEditModal = (item) => {
-    setEditingItem(item); // Set the item to be edited
+    setEditingItem(item); 
     setModalOpen(true);
   };
 
-  // --- DATA LOGIC ---
   const handleSaveItem = (formData) => {
     if (editingItem) {
-      // --- UPDATE EXISTING ITEM ---
       setTanks(prevTanks => prevTanks.map(tank => {
         if (tank.id === editingItem.id) {
-          // Clone the tasks array
           const updatedTasks = [...tank.tasks];
-          // Update the frequency of the first task (Water Change)
           if (updatedTasks.length > 0) {
             updatedTasks[0] = { ...updatedTasks[0], frequency: parseInt(formData.frequency) };
           }
-          
           return {
             ...tank,
             name: formData.name,
@@ -251,7 +238,6 @@ function App() {
         return tank;
       }));
     } else {
-      // --- CREATE NEW ITEM ---
       let taskName = "Water Change";
       if (formData.category === 'plants') taskName = "Watering";
       if (formData.category === 'rodi') taskName = "Replace Filter";
@@ -326,7 +312,6 @@ function App() {
     }
   };
 
-  // --- BACKUP & RESTORE ---
   const backupData = () => {
     const jsonString = JSON.stringify(tanks, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
@@ -372,7 +357,6 @@ function App() {
       <div className="app-container">
         {isSidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>}
         
-        {/* REUSED ITEM MODAL FOR ADD & EDIT */}
         <ItemModal 
           isOpen={isModalOpen} 
           onClose={() => setModalOpen(false)} 
@@ -429,7 +413,7 @@ function App() {
                   onDeleteHistory={handleDeleteHistory}
                   onAddNote={handleAddNote}       
                   onDeleteNote={handleDeleteNote}
-                  onEditItem={openEditModal} // Pass the edit function
+                  onEditItem={openEditModal}
                   onReset={resetData} 
                 />
               } />
@@ -476,7 +460,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
     setExpandedTask(expandedTask === uniqueKey ? null : uniqueKey);
   };
 
-  // Prevent card expansion when clicking edit button
   const handleEditClick = (e, tank) => {
     e.stopPropagation();
     onEditItem(tank);
