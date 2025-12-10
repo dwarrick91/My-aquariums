@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
-import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X } from 'lucide-react';
+import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, MessageSquare } from 'lucide-react';
 import SwipeView from './SwipeView';
 import './App.css';
 
@@ -9,6 +9,7 @@ import './App.css';
 const INITIAL_DATA = [
   {
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
+    notes: [], // <--- NEW: Notes Array
     tasks: [
       { name: "Water Change (20%)", frequency: 7, lastCompleted: null, history: [] },
       { name: "Clean Canister Filters", frequency: 30, lastCompleted: null, history: [] }
@@ -16,6 +17,7 @@ const INITIAL_DATA = [
   },
   {
     id: 2, name: "Saltwater Reef", category: "home", type: "Saltwater", size: "29 Gallon",
+    notes: [],
     tasks: [
       { name: "Water Change (10%)", frequency: 7, lastCompleted: null, history: [] },
       { name: "Empty Skimmer Cup", frequency: 3, lastCompleted: null, history: [] },
@@ -24,6 +26,7 @@ const INITIAL_DATA = [
   },
   {
     id: 3, name: "Community Tank", category: "home", type: "Freshwater", size: "50 Gallon",
+    notes: [],
     tasks: [
       { name: "Water Change (25%)", frequency: 7, lastCompleted: null, history: [] },
       { name: "Rinse Sponge Media", frequency: 14, lastCompleted: null, history: [] }
@@ -31,43 +34,41 @@ const INITIAL_DATA = [
   },
   {
     id: 4, name: "Betta Tank", category: "home", type: "Freshwater", size: "3 Gallon",
+    notes: [],
     tasks: [{ name: "Water Change (50%)", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
     id: 5, name: "Meemaw's Guppies", category: "meemaw", type: "Freshwater", size: "10 Gallon",
+    notes: [],
     tasks: [{ name: "Water Change (10%)", frequency: 7, lastCompleted: null, history: [] }]
   },
-  // --- UPDATED HERMIT CRAB SECTION ---
   {
-    id: 6, 
-    name: "Jackson's Hermit Crabs", // Updated Name
-    category: "hermit", 
-    type: "Terrarium", 
-    size: "55 Gallon", // Updated Size
-    // Renamed task to "Water Change" so the button appears automatically
+    id: 6, name: "Jackson's Hermit Crabs", category: "hermit", type: "Terrarium", size: "55 Gallon",
+    notes: [],
     tasks: [{ name: "Water Change", frequency: 2, lastCompleted: null, history: [] }]
   },
   {
     id: 7, name: "Living Room Monstera", category: "plants", type: "Plant", size: "Pot",
+    notes: [],
     tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
     id: 8, name: "Basement System", category: "rodi", type: "Filter", size: "System",
+    notes: [],
     tasks: [{ name: "Change Sediment Filter", frequency: 180, lastCompleted: null, history: [] }]
   }
 ];
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // V10 to ensure the new Hermit Crab data loads correctly
-    const saved = localStorage.getItem('aquariumDataV10'); 
+    const saved = localStorage.getItem('aquariumDataV11'); // Bumped to V11
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV10', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV11', JSON.stringify(tanks));
   }, [tanks]);
 
   const handleComplete = (tankId, taskIndex, side = null) => {
@@ -101,10 +102,36 @@ function App() {
     setTanks(newTanks);
   };
 
+  // --- NEW: ADD NOTE LOGIC ---
+  const handleAddNote = (tankId, text) => {
+    if (!text.trim()) return;
+    const newTanks = [...tanks];
+    const tank = newTanks.find(t => t.id === tankId);
+    if (!tank.notes) tank.notes = [];
+    
+    const newNote = {
+      id: Date.now(), // Simple unique ID
+      date: new Date().toISOString(),
+      text: text
+    };
+    
+    tank.notes.unshift(newNote); // Add to top of list
+    setTanks(newTanks);
+  };
+
+  // --- NEW: DELETE NOTE LOGIC ---
+  const handleDeleteNote = (tankId, noteId) => {
+    if(!window.confirm("Delete this note?")) return;
+    const newTanks = [...tanks];
+    const tank = newTanks.find(t => t.id === tankId);
+    tank.notes = tank.notes.filter(n => n.id !== noteId);
+    setTanks(newTanks);
+  };
+
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV10');
+      localStorage.removeItem('aquariumDataV11');
     }
   };
 
@@ -141,7 +168,16 @@ function App() {
 
           <div className="content-scroll-area">
             <Routes>
-              <Route path="/" element={<CleanDashboard tanks={tanks} onComplete={handleComplete} onDeleteHistory={handleDeleteHistory} onReset={resetData} />} />
+              <Route path="/" element={
+                <CleanDashboard 
+                  tanks={tanks} 
+                  onComplete={handleComplete} 
+                  onDeleteHistory={handleDeleteHistory}
+                  onAddNote={handleAddNote}       // Pass Note Function
+                  onDeleteNote={handleDeleteNote} // Pass Note Function
+                  onReset={resetData} 
+                />
+              } />
               <Route path="/swipe/:category" element={<SwipeWrapper tanks={tanks} onComplete={handleComplete} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
@@ -158,14 +194,25 @@ const SwipeWrapper = ({ tanks, onComplete }) => {
   return <SwipeView tanks={filteredTanks} onComplete={onComplete} categoryName={category} />;
 };
 
-const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
+// --- UPDATED DASHBOARD WITH NOTES UI ---
+const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDeleteNote, onReset }) => {
   const [expandedTankId, setExpandedTankId] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);
+  const [noteInput, setNoteInput] = useState(""); // State for note input
 
-  const toggleTank = (id) => setExpandedTankId(expandedTankId === id ? null : id);
+  const toggleTank = (id) => {
+    setExpandedTankId(expandedTankId === id ? null : id);
+    setNoteInput(""); // Clear input when switching tanks
+  };
+
   const toggleHistory = (e, uniqueKey) => {
     e.stopPropagation();
     setExpandedTask(expandedTask === uniqueKey ? null : uniqueKey);
+  };
+
+  const submitNote = (tankId) => {
+    onAddNote(tankId, noteInput);
+    setNoteInput("");
   };
 
   const totalOverdue = tanks.reduce((acc, tank) => {
@@ -211,6 +258,7 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
 
               {isOpen && (
                 <div className="card-body">
+                  {/* --- TASKS SECTION --- */}
                   {tank.tasks.map((task, index) => {
                     const lastDate = task.lastCompleted ? new Date(task.lastCompleted) : null;
                     const nextDate = lastDate ? addDays(lastDate, task.frequency) : new Date();
@@ -220,7 +268,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
                     
                     const isLargeTank = parseInt(tank.size) > 29;
                     const isWaterChange = task.name.toLowerCase().includes("water change");
-                    // Exclude Terrariums from Split Buttons
                     const showSideButtons = isLargeTank && isWaterChange && tank.type !== 'Terrarium';
 
                     return (
@@ -271,6 +318,46 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
                       </div>
                     );
                   })}
+
+                  {/* --- NEW NOTES SECTION --- */}
+                  <div className="notes-section">
+                    <div className="notes-title">Tank Notes</div>
+                    
+                    {/* Add Note Input */}
+                    <div className="note-input-group">
+                      <input 
+                        type="text" 
+                        value={noteInput}
+                        onChange={(e) => setNoteInput(e.target.value)}
+                        placeholder="Add a note (e.g. Added new fish)..."
+                        className="note-input"
+                        onKeyDown={(e) => e.key === 'Enter' && submitNote(tank.id)}
+                      />
+                      <button onClick={() => submitNote(tank.id)} className="btn-add">
+                        <Plus size={18} />
+                      </button>
+                    </div>
+
+                    {/* Notes List */}
+                    <div className="notes-list">
+                      {tank.notes && tank.notes.length > 0 ? (
+                        tank.notes.map((note) => (
+                          <div key={note.id} className="note-item">
+                            <div className="note-content">
+                              <span className="note-date">{format(new Date(note.date), 'MMM d, yyyy h:mm a')}</span>
+                              <span>{note.text}</span>
+                            </div>
+                            <button onClick={() => onDeleteNote(tank.id, note.id)} className="btn-delete-note">
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))
+                      ) : (
+                        <p style={{fontSize:'0.85rem', color:'#cbd5e1', fontStyle:'italic', textAlign:'center'}}>No notes yet.</p>
+                      )}
+                    </div>
+                  </div>
+
                 </div>
               )}
             </div>
