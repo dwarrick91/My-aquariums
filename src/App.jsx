@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
-import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, MessageSquare } from 'lucide-react';
+import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, MessageSquare, Download, Upload } from 'lucide-react';
 import SwipeView from './SwipeView';
 import './App.css';
 
@@ -63,9 +63,34 @@ const INITIAL_DATA = [
     tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
-    id: 8, name: "Basement System", category: "rodi", type: "Filter", size: "System",
+    id: 8, name: "Filter 1", category: "rodi", type: "Sediment", size: "Stage 1",
     notes: [],
-    tasks: [{ name: "Change Sediment Filter", frequency: 180, lastCompleted: null, history: [] }]
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 802, name: "Filter 2", category: "rodi", type: "Carbon Block", size: "Stage 2",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 803, name: "Filter 3", category: "rodi", type: "Carbon Block", size: "Stage 3",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 804, name: "Filter 4", category: "rodi", type: "RO Membrane", size: "Stage 4",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 730, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 805, name: "Filter 5", category: "rodi", type: "Deionization", size: "Stage 5",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 90, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 806, name: "Filter 6", category: "rodi", type: "Polishing", size: "Stage 6",
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
   }
 ];
 
@@ -90,10 +115,9 @@ const AddItemModal = ({ isOpen, onClose, onAdd }) => {
     e.preventDefault();
     onAdd(formData);
     onClose();
-    setFormData({ name: '', category: 'home', type: '', size: '', frequency: 7 }); // Reset
+    setFormData({ name: '', category: 'home', type: '', size: '', frequency: 7 }); 
   };
 
-  // Determine placeholder text based on category
   const isPlant = formData.category === 'plants';
   const sizeLabel = isPlant ? "Size (e.g. Small Pot)" : "Size (e.g. 90 Gallon)";
   const typeLabel = isPlant ? "Type (e.g. Succulent)" : "Type (e.g. Saltwater)";
@@ -120,51 +144,22 @@ const AddItemModal = ({ isOpen, onClose, onAdd }) => {
 
           <div className="form-group">
             <label className="form-label">Name</label>
-            <input 
-              name="name" 
-              placeholder="e.g. Living Room Tank" 
-              value={formData.name} 
-              onChange={handleChange} 
-              className="form-input" 
-              required 
-            />
+            <input name="name" placeholder="e.g. Living Room Tank" value={formData.name} onChange={handleChange} className="form-input" required />
           </div>
 
           <div className="form-group">
             <label className="form-label">{typeLabel}</label>
-            <input 
-              name="type" 
-              placeholder={isPlant ? "Houseplant" : "Freshwater"} 
-              value={formData.type} 
-              onChange={handleChange} 
-              className="form-input" 
-              required 
-            />
+            <input name="type" placeholder={isPlant ? "Houseplant" : "Freshwater"} value={formData.type} onChange={handleChange} className="form-input" required />
           </div>
 
           <div className="form-group">
             <label className="form-label">{sizeLabel}</label>
-            <input 
-              name="size" 
-              placeholder={isPlant ? "Pot" : "75 Gallon"} 
-              value={formData.size} 
-              onChange={handleChange} 
-              className="form-input" 
-              required 
-            />
+            <input name="size" placeholder={isPlant ? "Pot" : "75 Gallon"} value={formData.size} onChange={handleChange} className="form-input" required />
           </div>
 
           <div className="form-group">
             <label className="form-label">Task Frequency (Days)</label>
-            <input 
-              type="number" 
-              name="frequency" 
-              value={formData.frequency} 
-              onChange={handleChange} 
-              className="form-input" 
-              min="1"
-              required 
-            />
+            <input type="number" name="frequency" value={formData.frequency} onChange={handleChange} className="form-input" min="1" required />
           </div>
 
           <div className="modal-actions">
@@ -185,12 +180,16 @@ function App() {
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  const [isAddModalOpen, setAddModalOpen] = useState(false); // State for modal
+  const [isAddModalOpen, setAddModalOpen] = useState(false);
+  
+  // Hidden input for file uploading
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('aquariumDataV15', JSON.stringify(tanks));
   }, [tanks]);
 
+  // --- DATA LOGIC ---
   const handleComplete = (tankId, taskIndex, side = null) => {
     const newTanks = [...tanks];
     const tank = newTanks.find(t => t.id === tankId);
@@ -228,12 +227,7 @@ function App() {
     const tank = newTanks.find(t => t.id === tankId);
     if (!tank.notes) tank.notes = [];
     
-    const newNote = {
-      id: Date.now(), 
-      date: new Date().toISOString(),
-      text: text
-    };
-    
+    const newNote = { id: Date.now(), date: new Date().toISOString(), text: text };
     tank.notes.unshift(newNote); 
     setTanks(newTanks);
   };
@@ -246,30 +240,20 @@ function App() {
     setTanks(newTanks);
   };
 
-  // --- HANDLE NEW ITEM CREATION ---
   const handleAddItem = (formData) => {
-    // Determine default task name based on category
     let taskName = "Water Change";
     if (formData.category === 'plants') taskName = "Watering";
     if (formData.category === 'rodi') taskName = "Replace Filter";
 
     const newItem = {
-      id: Date.now(), // Generate unique ID
+      id: Date.now(),
       name: formData.name,
       category: formData.category,
       type: formData.type,
       size: formData.size,
       notes: [],
-      tasks: [
-        { 
-          name: taskName, 
-          frequency: parseInt(formData.frequency), 
-          lastCompleted: null, 
-          history: [] 
-        }
-      ]
+      tasks: [{ name: taskName, frequency: parseInt(formData.frequency), lastCompleted: null, history: [] }]
     };
-
     setTanks([...tanks, newItem]);
   };
 
@@ -280,24 +264,72 @@ function App() {
     }
   };
 
+  // --- BACKUP & RESTORE FUNCTIONS ---
+  const backupData = () => {
+    // 1. Convert state to string
+    const jsonString = JSON.stringify(tanks, null, 2);
+    // 2. Create a blob (file-like object)
+    const blob = new Blob([jsonString], { type: "application/json" });
+    // 3. Create a download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tank-tracker-backup-${format(new Date(), 'yyyy-MM-dd')}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current.click();
+  };
+
+  const restoreData = (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const importedData = JSON.parse(e.target.result);
+        // Basic validation: Check if it's an array
+        if (Array.isArray(importedData)) {
+          if(window.confirm("This will overwrite your current data with the backup. Continue?")) {
+            setTanks(importedData);
+            alert("Data restored successfully!");
+          }
+        } else {
+          alert("Invalid file format.");
+        }
+      } catch (err) {
+        alert("Error reading file. Make sure it is a valid JSON backup.");
+      }
+    };
+    reader.readAsText(file);
+    // Reset input so same file can be selected again if needed
+    event.target.value = null; 
+  };
+
   return (
     <Router>
       <div className="app-container">
         {isSidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>}
         
-        {/* ADD ITEM MODAL */}
-        <AddItemModal 
-          isOpen={isAddModalOpen} 
-          onClose={() => setAddModalOpen(false)} 
-          onAdd={handleAddItem} 
+        <AddItemModal isOpen={isAddModalOpen} onClose={() => setAddModalOpen(false)} onAdd={handleAddItem} />
+
+        {/* HIDDEN FILE INPUT FOR RESTORE */}
+        <input 
+          type="file" 
+          ref={fileInputRef} 
+          style={{display: 'none'}} 
+          accept=".json" 
+          onChange={restoreData} 
         />
 
         <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <h1>Tank Tracker</h1>
-            <button onClick={() => setSidebarOpen(false)} style={{background:'none', border:'none', color:'white'}} className="lg-hidden">
-                <X size={24}/>
-            </button>
+            <button onClick={() => setSidebarOpen(false)} style={{background:'none', border:'none', color:'white'}} className="lg-hidden"><X size={24}/></button>
           </div>
           <nav className="sidebar-nav">
             <Link to="/" onClick={() => setSidebarOpen(false)} className="nav-link">Dashboard (Overview)</Link>
@@ -307,6 +339,15 @@ function App() {
             <Link to="/swipe/plants" onClick={() => setSidebarOpen(false)} className="nav-link">Plants</Link>
             <Link to="/swipe/meemaw" onClick={() => setSidebarOpen(false)} className="nav-link">Meemaw's Tank</Link>
             <Link to="/swipe/rodi" onClick={() => setSidebarOpen(false)} className="nav-link">RODI</Link>
+
+            {/* --- NEW DATA SETTINGS SECTION --- */}
+            <div className="section-label">Data Settings</div>
+            <button onClick={backupData} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
+              <Download size={18} /> Backup Data
+            </button>
+            <button onClick={triggerFileUpload} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
+              <Upload size={18} /> Restore Data
+            </button>
           </nav>
         </aside>
 
@@ -342,7 +383,6 @@ function App() {
             </Routes>
           </div>
 
-          {/* FLOATING ACTION BUTTON */}
           <button className="fab-add" onClick={() => setAddModalOpen(true)}>
             <Plus size={32} />
           </button>
@@ -355,13 +395,7 @@ function App() {
 const SwipeWrapper = ({ tanks, onComplete, onAddNote, onDeleteNote }) => {
   const { category } = useParams();
   const filteredTanks = tanks.filter(t => t.category === category);
-  return <SwipeView 
-            tanks={filteredTanks} 
-            onComplete={onComplete} 
-            onAddNote={onAddNote} 
-            onDeleteNote={onDeleteNote} 
-            categoryName={category} 
-         />;
+  return <SwipeView tanks={filteredTanks} onComplete={onComplete} onAddNote={onAddNote} onDeleteNote={onDeleteNote} categoryName={category} />;
 };
 
 // --- DASHBOARD COMPONENT ---
