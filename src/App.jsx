@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// 1. Added 'Navigate' to the imports to fix the blank screen issue
 import { BrowserRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
 import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X } from 'lucide-react';
@@ -54,14 +53,14 @@ const INITIAL_DATA = [
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    const saved = localStorage.getItem('aquariumDataV8'); // Using V8 to ensure fresh data structure
+    const saved = localStorage.getItem('aquariumDataV9'); // Bumped to V9
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV8', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV9', JSON.stringify(tanks));
   }, [tanks]);
 
   const handleComplete = (tankId, taskIndex, side = null) => {
@@ -70,6 +69,7 @@ function App() {
     const task = tank.tasks[taskIndex];
     const now = new Date().toISOString();
     
+    // Save the 'side' (Left/Right) into history
     const historyEntry = { date: now, side: side };
     
     if (!task.history) task.history = [];
@@ -98,20 +98,15 @@ function App() {
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV8');
+      localStorage.removeItem('aquariumDataV9');
     }
   };
 
   return (
     <Router>
       <div className="app-container">
+        {isSidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>}
         
-        {/* Mobile Overlay */}
-        {isSidebarOpen && (
-          <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>
-        )}
-
-        {/* Sidebar */}
         <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
             <h1>Tank Tracker</h1>
@@ -120,12 +115,8 @@ function App() {
             </button>
           </div>
           <nav className="sidebar-nav">
-            <Link to="/" onClick={() => setSidebarOpen(false)} className="nav-link">
-              Dashboard (Overview)
-            </Link>
-            
+            <Link to="/" onClick={() => setSidebarOpen(false)} className="nav-link">Dashboard (Overview)</Link>
             <div className="section-label">Swipe Lists</div>
-            
             <Link to="/swipe/home" onClick={() => setSidebarOpen(false)} className="nav-link">Home Aquariums</Link>
             <Link to="/swipe/hermit" onClick={() => setSidebarOpen(false)} className="nav-link">Hermit Crabs</Link>
             <Link to="/swipe/plants" onClick={() => setSidebarOpen(false)} className="nav-link">Plants</Link>
@@ -134,7 +125,6 @@ function App() {
           </nav>
         </aside>
 
-        {/* Main Content */}
         <main className="main-content">
           <header className="mobile-header">
             <button onClick={() => setSidebarOpen(true)} style={{background:'none', border:'none'}}>
@@ -145,22 +135,8 @@ function App() {
 
           <div className="content-scroll-area">
             <Routes>
-              {/* 1. Dashboard Route */}
-              <Route path="/" element={
-                <CleanDashboard 
-                   tanks={tanks} 
-                   onComplete={handleComplete} 
-                   onDeleteHistory={handleDeleteHistory}
-                   onReset={resetData}
-                />
-              } />
-
-              {/* 2. Swipe View Route */}
-              <Route path="/swipe/:category" element={
-                <SwipeWrapper tanks={tanks} onComplete={handleComplete} />
-              } />
-
-              {/* 3. CATCH-ALL ROUTE: Fixes the blank screen issue */}
+              <Route path="/" element={<CleanDashboard tanks={tanks} onComplete={handleComplete} onDeleteHistory={handleDeleteHistory} onReset={resetData} />} />
+              <Route path="/swipe/:category" element={<SwipeWrapper tanks={tanks} onComplete={handleComplete} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
@@ -169,8 +145,6 @@ function App() {
     </Router>
   );
 }
-
-// --- HELPER COMPONENTS ---
 
 const SwipeWrapper = ({ tanks, onComplete }) => {
   const { category } = useParams();
@@ -182,10 +156,7 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
   const [expandedTankId, setExpandedTankId] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);
 
-  const toggleTank = (id) => {
-    setExpandedTankId(expandedTankId === id ? null : id);
-  };
-
+  const toggleTank = (id) => setExpandedTankId(expandedTankId === id ? null : id);
   const toggleHistory = (e, uniqueKey) => {
     e.stopPropagation();
     setExpandedTask(expandedTask === uniqueKey ? null : uniqueKey);
@@ -201,7 +172,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
 
   return (
     <div className="dashboard-container">
-      {/* Status Banner */}
       <div className="status-banner">
         <div>
           <h1 style={{margin:0, fontSize:'1.5rem', color:'#1e293b'}}>My Aquarium</h1>
@@ -212,7 +182,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
         </div>
       </div>
 
-      {/* Tank List */}
       <div>
         {tanks.map(tank => {
           const isOpen = expandedTankId === tank.id;
@@ -223,7 +192,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
           
           return (
             <div key={tank.id} className={`tank-card ${isOpen ? 'open' : ''}`}>
-              {/* Header */}
               <button onClick={() => toggleTank(tank.id)} className="card-header">
                 <div className="tank-info">
                   <div className={`status-dot ${tankOverdueCount > 0 ? 'red' : 'green'}`} />
@@ -235,7 +203,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
                 {isOpen ? <ChevronUp size={20} color="#3b82f6" /> : <ChevronDown size={20} color="#cbd5e1" />}
               </button>
 
-              {/* Body */}
               {isOpen && (
                 <div className="card-body">
                   {tank.tasks.map((task, index) => {
@@ -244,7 +211,11 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
                     const daysDiff = differenceInDays(new Date(), nextDate);
                     const isOverdue = lastDate ? daysDiff > 0 : true;
                     const uiKey = `${tank.id}-${index}`;
-                    const showSideButtons = parseInt(tank.size) > 29;
+                    
+                    // --- NEW LOGIC: Only show split buttons if >29G AND it's a Water Change ---
+                    const isLargeTank = parseInt(tank.size) > 29;
+                    const isWaterChange = task.name.toLowerCase().includes("water change");
+                    const showSideButtons = isLargeTank && isWaterChange;
 
                     return (
                       <div key={index} className="task-item">
@@ -260,7 +231,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
                           </button>
                         </div>
 
-                        {/* Buttons */}
                         <div className="btn-group">
                           {showSideButtons ? (
                             <>
@@ -274,7 +244,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
                           )}
                         </div>
 
-                        {/* History */}
                         {expandedTask === uiKey && (
                            <div style={{marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid #e2e8f0'}}>
                              <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#94a3b8', textTransform:'uppercase'}}>History</p>
@@ -282,7 +251,11 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
                                <ul style={{listStyle:'none', padding:0, margin:'0.5rem 0'}}>
                                  {task.history.slice(0, 3).map((entry, hIndex) => (
                                    <li key={hIndex} style={{display:'flex', justifyContent:'space-between', padding:'0.25rem 0', color:'#64748b', fontSize:'0.9rem'}}>
-                                     <span>{format(new Date(entry.date || entry), 'MMM d')}</span>
+                                     <span>
+                                         {format(new Date(entry.date || entry), 'MMM d')} 
+                                         {/* Show side in history if it exists */}
+                                         {entry.side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'#e2e8f0', borderRadius:'4px', fontSize:'0.75rem'}}>{entry.side}</span>}
+                                     </span>
                                      <button onClick={() => onDeleteHistory(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>
                                    </li>
                                  ))}

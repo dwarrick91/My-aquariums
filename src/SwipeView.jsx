@@ -42,8 +42,12 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
           style={{height:'100%', paddingBottom:'40px'}}
         >
           {tanks.map((tank) => {
-            const wcTaskIndex = tank.tasks.findIndex(t => t.name.toLowerCase().includes("water change")) || 0;
-            const wcTask = tank.tasks[wcTaskIndex];
+            // Find the Water Change task
+            const wcTaskIndex = tank.tasks.findIndex(t => t.name.toLowerCase().includes("water change"));
+            const wcTask = wcTaskIndex >= 0 ? tank.tasks[wcTaskIndex] : null;
+
+            // Check if this specific tank needs Left/Right buttons
+            const isLargeTank = parseInt(tank.size) > 29;
 
             return (
               <SwiperSlide key={tank.id} style={{
@@ -53,7 +57,7 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
-                height: '520px' 
+                height: '540px' 
               }}>
                 <div style={{height:'100px', background:'linear-gradient(135deg, #2563eb, #06b6d4)'}}></div>
                 
@@ -65,8 +69,8 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
                   <span style={{color:'#64748b', fontSize:'0.875rem'}}>{tank.size} • {tank.type}</span>
                 </div>
 
-                <div style={{padding:'2rem', flex:1}}>
-                  <div style={{background:'#f8fafc', padding:'1rem', borderRadius:'0.75rem', border:'1px solid #e2e8f0', textAlign:'center', marginBottom:'1.5rem'}}>
+                <div style={{padding:'2rem', flex:1, display:'flex', flexDirection:'column'}}>
+                  <div style={{background:'#f8fafc', padding:'1rem', borderRadius:'0.75rem', border:'1px solid #e2e8f0', textAlign:'center', marginBottom:'auto'}}>
                     <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b', textTransform:'uppercase', margin:0}}>Last Water Change</p>
                     <p style={{fontSize:'1.25rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0 0'}}>
                       {wcTask && wcTask.lastCompleted 
@@ -76,15 +80,38 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
                   </div>
                   
                   {wcTask && (
-                    <button 
-                      onClick={() => onComplete(tank.id, wcTaskIndex)}
-                      style={{
-                        width:'100%', padding:'1rem', background:'#2563eb', color:'white', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', boxShadow:'0 4px 6px rgba(37, 99, 235, 0.2)'
-                      }}
-                    >
-                      <Droplets size={20} />
-                      Log Water Change Today
-                    </button>
+                    <div style={{marginTop:'2rem'}}>
+                      {isLargeTank ? (
+                        <div style={{display:'flex', gap:'1rem'}}>
+                          <button 
+                            onClick={() => onComplete(tank.id, wcTaskIndex, 'Left')}
+                            style={{
+                              flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'
+                            }}
+                          >
+                            Left
+                          </button>
+                          <button 
+                            onClick={() => onComplete(tank.id, wcTaskIndex, 'Right')}
+                            style={{
+                              flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'
+                            }}
+                          >
+                            Right
+                          </button>
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => onComplete(tank.id, wcTaskIndex, null)}
+                          style={{
+                            width:'100%', padding:'1rem', background:'#2563eb', color:'white', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', boxShadow:'0 4px 6px rgba(37, 99, 235, 0.2)'
+                          }}
+                        >
+                          <Droplets size={20} />
+                          Log Water Change Today
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               </SwiperSlide>
