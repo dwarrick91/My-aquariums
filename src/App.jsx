@@ -37,9 +37,15 @@ const INITIAL_DATA = [
     id: 5, name: "Meemaw's Guppies", category: "meemaw", type: "Freshwater", size: "10 Gallon",
     tasks: [{ name: "Water Change (10%)", frequency: 7, lastCompleted: null, history: [] }]
   },
+  // --- UPDATED HERMIT CRAB SECTION ---
   {
-    id: 6, name: "Crabitat", category: "hermit", type: "Terrarium", size: "20 Gallon",
-    tasks: [{ name: "Mist & Water", frequency: 2, lastCompleted: null, history: [] }]
+    id: 6, 
+    name: "Jackson's Hermit Crabs", // Updated Name
+    category: "hermit", 
+    type: "Terrarium", 
+    size: "55 Gallon", // Updated Size
+    // Renamed task to "Water Change" so the button appears automatically
+    tasks: [{ name: "Water Change", frequency: 2, lastCompleted: null, history: [] }]
   },
   {
     id: 7, name: "Living Room Monstera", category: "plants", type: "Plant", size: "Pot",
@@ -53,14 +59,15 @@ const INITIAL_DATA = [
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    const saved = localStorage.getItem('aquariumDataV9'); // Bumped to V9
+    // V10 to ensure the new Hermit Crab data loads correctly
+    const saved = localStorage.getItem('aquariumDataV10'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV9', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV10', JSON.stringify(tanks));
   }, [tanks]);
 
   const handleComplete = (tankId, taskIndex, side = null) => {
@@ -69,7 +76,6 @@ function App() {
     const task = tank.tasks[taskIndex];
     const now = new Date().toISOString();
     
-    // Save the 'side' (Left/Right) into history
     const historyEntry = { date: now, side: side };
     
     if (!task.history) task.history = [];
@@ -98,7 +104,7 @@ function App() {
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV9');
+      localStorage.removeItem('aquariumDataV10');
     }
   };
 
@@ -118,7 +124,7 @@ function App() {
             <Link to="/" onClick={() => setSidebarOpen(false)} className="nav-link">Dashboard (Overview)</Link>
             <div className="section-label">Swipe Lists</div>
             <Link to="/swipe/home" onClick={() => setSidebarOpen(false)} className="nav-link">Home Aquariums</Link>
-            <Link to="/swipe/hermit" onClick={() => setSidebarOpen(false)} className="nav-link">Hermit Crabs</Link>
+            <Link to="/swipe/hermit" onClick={() => setSidebarOpen(false)} className="nav-link">Jackson's Hermit Crabs</Link>
             <Link to="/swipe/plants" onClick={() => setSidebarOpen(false)} className="nav-link">Plants</Link>
             <Link to="/swipe/meemaw" onClick={() => setSidebarOpen(false)} className="nav-link">Meemaw's Tank</Link>
             <Link to="/swipe/rodi" onClick={() => setSidebarOpen(false)} className="nav-link">RODI</Link>
@@ -212,10 +218,10 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
                     const isOverdue = lastDate ? daysDiff > 0 : true;
                     const uiKey = `${tank.id}-${index}`;
                     
-                    // --- NEW LOGIC: Only show split buttons if >29G AND it's a Water Change ---
                     const isLargeTank = parseInt(tank.size) > 29;
                     const isWaterChange = task.name.toLowerCase().includes("water change");
-                    const showSideButtons = isLargeTank && isWaterChange;
+                    // Exclude Terrariums from Split Buttons
+                    const showSideButtons = isLargeTank && isWaterChange && tank.type !== 'Terrarium';
 
                     return (
                       <div key={index} className="task-item">
@@ -253,7 +259,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
                                    <li key={hIndex} style={{display:'flex', justifyContent:'space-between', padding:'0.25rem 0', color:'#64748b', fontSize:'0.9rem'}}>
                                      <span>
                                          {format(new Date(entry.date || entry), 'MMM d')} 
-                                         {/* Show side in history if it exists */}
                                          {entry.side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'#e2e8f0', borderRadius:'4px', fontSize:'0.75rem'}}>{entry.side}</span>}
                                      </span>
                                      <button onClick={() => onDeleteHistory(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>

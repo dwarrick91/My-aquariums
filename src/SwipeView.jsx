@@ -8,7 +8,13 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
 export default function SwipeView({ tanks, onComplete, categoryName }) {
-  const displayTitle = categoryName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  // Logic to show specific headers for specific categories
+  let displayTitle = categoryName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+  
+  // Custom Header for Hermit Crabs
+  if(categoryName === 'hermit') {
+    displayTitle = "Jackson's Hermit Crabs";
+  }
 
   const containerStyle = {
     height: '100%',
@@ -42,15 +48,15 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
           style={{height:'100%', paddingBottom:'40px'}}
         >
           {tanks.map((tank) => {
-            // 1. Find the Water Change task
             const wcTaskIndex = tank.tasks.findIndex(t => t.name.toLowerCase().includes("water change"));
             const wcTask = wcTaskIndex >= 0 ? tank.tasks[wcTaskIndex] : null;
 
-            // 2. Check if this specific tank needs Left/Right buttons
+            // Check conditions for split buttons
             const isLargeTank = parseInt(tank.size) > 29;
+            const isTerrarium = tank.type === "Terrarium";
+            // ONLY show side buttons if large AND NOT a terrarium
+            const showSideButtons = isLargeTank && !isTerrarium;
 
-            // 3. Find the LAST SIDE used (from history)
-            // We check the history array. Since we prepend new items, index 0 is the latest.
             const latestHistory = wcTask && wcTask.history && wcTask.history.length > 0 ? wcTask.history[0] : null;
             const lastSide = latestHistory ? latestHistory.side : null;
 
@@ -68,7 +74,7 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
                 
                 <div style={{marginTop:'-40px', textAlign:'center', padding:'0 1rem'}}>
                   <div style={{width:'80px', height:'80px', margin:'0 auto', background:'white', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', boxShadow:'0 4px 6px rgba(0,0,0,0.1)'}}>
-                    🐠
+                    {tank.category === 'hermit' ? '🦀' : '🐠'}
                   </div>
                   <h3 style={{fontSize:'1.5rem', fontWeight:'bold', color:'#1e293b', margin:'1rem 0 0.5rem 0'}}>{tank.name}</h3>
                   <span style={{color:'#64748b', fontSize:'0.875rem'}}>{tank.size} • {tank.type}</span>
@@ -76,7 +82,6 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
 
                 <div style={{padding:'2rem', flex:1, display:'flex', flexDirection:'column'}}>
                   
-                  {/* --- SUMMARY BOX --- */}
                   <div style={{background:'#f8fafc', padding:'1rem', borderRadius:'0.75rem', border:'1px solid #e2e8f0', textAlign:'center', marginBottom:'auto'}}>
                     <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b', textTransform:'uppercase', margin:0}}>Last Water Change</p>
                     <p style={{fontSize:'1.25rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0 0'}}>
@@ -84,7 +89,6 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
                         ? (
                             <span>
                               {new Date(wcTask.lastCompleted).toLocaleDateString()}
-                              {/* DISPLAY SIDE IF EXISTS */}
                               {lastSide && <span style={{marginLeft:'8px', color:'#64748b', fontWeight:'normal'}}>({lastSide})</span>}
                             </span>
                           )
@@ -92,10 +96,9 @@ export default function SwipeView({ tanks, onComplete, categoryName }) {
                     </p>
                   </div>
                   
-                  {/* --- BUTTONS --- */}
                   {wcTask && (
                     <div style={{marginTop:'2rem'}}>
-                      {isLargeTank ? (
+                      {showSideButtons ? (
                         <div style={{display:'flex', gap:'1rem'}}>
                           <button 
                             onClick={() => onComplete(tank.id, wcTaskIndex, 'Left')}
