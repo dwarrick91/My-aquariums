@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useParams } from 'react-router-dom';
+// 1. Added 'Navigate' to the imports to fix the blank screen issue
+import { BrowserRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
 import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X } from 'lucide-react';
 import SwipeView from './SwipeView';
@@ -53,7 +54,7 @@ const INITIAL_DATA = [
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    const saved = localStorage.getItem('aquariumDataV8'); // Version 8
+    const saved = localStorage.getItem('aquariumDataV8'); // Using V8 to ensure fresh data structure
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
@@ -144,6 +145,7 @@ function App() {
 
           <div className="content-scroll-area">
             <Routes>
+              {/* 1. Dashboard Route */}
               <Route path="/" element={
                 <CleanDashboard 
                    tanks={tanks} 
@@ -153,9 +155,13 @@ function App() {
                 />
               } />
 
+              {/* 2. Swipe View Route */}
               <Route path="/swipe/:category" element={
                 <SwipeWrapper tanks={tanks} onComplete={handleComplete} />
               } />
+
+              {/* 3. CATCH-ALL ROUTE: Fixes the blank screen issue */}
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </main>
@@ -163,6 +169,8 @@ function App() {
     </Router>
   );
 }
+
+// --- HELPER COMPONENTS ---
 
 const SwipeWrapper = ({ tanks, onComplete }) => {
   const { category } = useParams();
