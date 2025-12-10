@@ -3,13 +3,13 @@ import { differenceInDays, addDays, format } from 'date-fns';
 import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import './App.css';
 
-// 1. Updated Configuration
+// 1. Updated Configuration (V4)
 const INITIAL_DATA = [
   {
     id: 1,
     name: "The Monster",
     type: "Freshwater",
-    size: "135 Gallon", // Changed from 150
+    size: "135 Gallon",
     tasks: [
       { name: "Water Change (20%)", frequency: 7, lastCompleted: null, history: [] },
       { name: "Clean Canister Filters", frequency: 30, lastCompleted: null, history: [] }
@@ -19,7 +19,7 @@ const INITIAL_DATA = [
     id: 2,
     name: "Saltwater Reef",
     type: "Saltwater",
-    size: "29 Gallon", // Changed from 65
+    size: "29 Gallon",
     tasks: [
       { name: "Water Change (10%)", frequency: 7, lastCompleted: null, history: [] },
       { name: "Empty Skimmer Cup", frequency: 3, lastCompleted: null, history: [] },
@@ -30,7 +30,7 @@ const INITIAL_DATA = [
     id: 3,
     name: "Community Tank",
     type: "Freshwater",
-    size: "50 Gallon", // Changed from 55
+    size: "50 Gallon",
     tasks: [
       { name: "Water Change (25%)", frequency: 7, lastCompleted: null, history: [] },
       { name: "Rinse Sponge Media", frequency: 14, lastCompleted: null, history: [] }
@@ -40,27 +40,37 @@ const INITIAL_DATA = [
     id: 4,
     name: "Betta Tank",
     type: "Freshwater",
-    size: "3 Gallon", // Changed from 1g Bowl
+    size: "3 Gallon",
     tasks: [
       { name: "Water Change (50%)", frequency: 7, lastCompleted: null, history: [] }
+    ]
+  },
+  {
+    id: 5,
+    name: "New Reef",
+    type: "Saltwater",
+    size: "90 Gallon",
+    tasks: [
+      { name: "Water Change (10%)", frequency: 7, lastCompleted: null, history: [] },
+      { name: "Empty Skimmer Cup", frequency: 3, lastCompleted: null, history: [] },
+      { name: "Check Salinity", frequency: 7, lastCompleted: null, history: [] }
     ]
   }
 ];
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // We use a new key 'aquariumDataV3' to ensure we start fresh with the new tank sizes
-    const saved = localStorage.getItem('aquariumDataV3'); 
+    // Bumped to V4 to force the new tank to appear
+    const saved = localStorage.getItem('aquariumDataV4'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [expandedTask, setExpandedTask] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV3', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV4', JSON.stringify(tanks));
   }, [tanks]);
 
-  // Updated to accept 'side' parameter
   const handleComplete = (tankId, taskIndex, side = null) => {
     const newTanks = [...tanks];
     const tank = newTanks.find(t => t.id === tankId);
@@ -78,7 +88,7 @@ function App() {
     task.history = [historyEntry, ...task.history];
     
     // Update lastCompleted
-    task.lastCompleted = now; // We still store the raw date string here for easy calculations
+    task.lastCompleted = now; 
 
     setTanks(newTanks);
   };
@@ -95,7 +105,6 @@ function App() {
 
     // Recalculate 'lastCompleted' based on the remaining history
     if (task.history.length > 0) {
-      // Handle both old format (string) and new format (object)
       const newest = task.history[0];
       task.lastCompleted = typeof newest === 'string' ? newest : newest.date;
     } else {
@@ -113,7 +122,7 @@ function App() {
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history and reset tank sizes.")) {
       setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV3');
+      localStorage.removeItem('aquariumDataV4');
     }
   };
 
@@ -202,7 +211,6 @@ function App() {
                           {task.history && task.history.length > 0 ? (
                             <ul>
                               {task.history.map((entry, hIndex) => {
-                                // Handle both old string format and new object format
                                 const dateStr = typeof entry === 'string' ? entry : entry.date;
                                 const side = typeof entry === 'object' ? entry.side : null;
 
@@ -211,7 +219,6 @@ function App() {
                                     <span>
                                       {format(new Date(dateStr), 'MMM d, yyyy')} 
                                       <span className="history-time"> {format(new Date(dateStr), 'h:mm a')}</span>
-                                      {/* Show Side Badge if it exists */}
                                       {side && <span className="side-badge">{side}</span>}
                                     </span>
                                     <button 
