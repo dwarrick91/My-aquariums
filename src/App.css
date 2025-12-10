@@ -1,0 +1,221 @@
+:root {
+  --bg-color: #f0f2f5;
+  --card-bg: #ffffff;
+  --fresh-accent: #2ecc71;
+  --salt-accent: #3498db;
+  --danger: #e74c3c;
+  --danger-bg: #fff5f5; /* Light red background for overdue */
+  --text: #2c3e50;
+  --subtext: #95a5a6;
+}
+
+body {
+  background-color: var(--bg-color);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  margin: 0;
+  padding: 20px;
+  color: var(--text);
+}
+
+.app-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-bottom: 50px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.tank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.tank-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  border-top: 5px solid #ccc;
+}
+
+.tank-card.freshwater { border-color: var(--fresh-accent); }
+.tank-card.saltwater { border-color: var(--salt-accent); }
+
+.tank-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 10px;
+}
+
+.tank-header h2 { margin: 0; font-size: 1.25rem; }
+
+.badge {
+  font-size: 0.75rem;
+  background: #eee;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+/* --- TASK WRAPPER STYLES --- */
+
+.task-wrapper {
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  overflow: hidden; 
+  border-left: 5px solid transparent; /* Prepare for border transition */
+  transition: background 0.3s;
+}
+
+/* THE RED ALERT STYLE */
+.task-wrapper.overdue-wrapper {
+  background-color: var(--danger-bg);
+  border-left: 5px solid var(--danger);
+}
+
+.task-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+}
+
+.task-info { display: flex; flex-direction: column; }
+.task-name { font-weight: 600; font-size: 0.95rem; }
+
+.status { font-size: 0.8rem; margin-top: 4px; }
+.status.overdue { color: var(--danger); font-weight: bold; }
+.status.good { color: var(--subtext); }
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-complete {
+  background: var(--fresh-accent);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+
+.tank-card.saltwater .btn-complete { background: var(--salt-accent); }
+.btn-complete:hover { opacity: 0.9; }
+
+.btn-icon {
+  background: transparent;
+  border: 1px solid rgba(0,0,0,0.1);
+  color: var(--subtext);
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: rgba(0,0,0,0.05);
+  color: var(--text);
+}
+
+/* --- HISTORY DROPDOWN STYLES --- */
+.history-list {
+  background: rgba(255,255,255,0.5); /* Slightly transparent to show red bg if overdue */
+  padding: 10px 15px;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  font-size: 0.85rem;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.history-header {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  color: var(--subtext);
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.history-list ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.history-list li {
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-between; /* Pushes delete button to the right */
+  align-items: center;
+}
+
+.history-list li:last-child { border-bottom: none; }
+
+.history-time {
+  color: var(--subtext);
+  font-size: 0.75rem;
+  margin-left: 5px;
+}
+
+/* Delete button inside history */
+.btn-delete-entry {
+  background: none;
+  border: none;
+  color: var(--subtext);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: all 0.2s;
+}
+
+.btn-delete-entry:hover {
+  color: var(--danger);
+  background: rgba(231, 76, 60, 0.1);
+  opacity: 1;
+}
+
+.no-history { color: var(--subtext); font-style: italic; }
+
+footer {
+  margin-top: 40px;
+  text-align: center;
+}
+
+.btn-reset {
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 0 auto;
+  opacity: 0.6;
+}
+.btn-reset:hover { opacity: 1; text-decoration: underline; }
