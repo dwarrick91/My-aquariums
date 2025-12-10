@@ -1,258 +1,105 @@
-import React, { useState, useEffect } from 'react';
-import { differenceInDays, addDays, format } from 'date-fns';
-import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
-import './App.css';
+// src/App.jsx
+import React, { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, useParams } from 'react-router-dom';
+import { Menu, X } from 'lucide-react'; 
+import Homepage from './Homepage';
+import SwipeView from './SwipeView.jsx';
 
-// 1. Updated Configuration (V4)
-const INITIAL_DATA = [
-  {
-    id: 1,
-    name: "The Monster",
-    type: "Freshwater",
-    size: "135 Gallon",
-    tasks: [
-      { name: "Water Change (20%)", frequency: 7, lastCompleted: null, history: [] },
-      { name: "Clean Canister Filters", frequency: 30, lastCompleted: null, history: [] }
-    ]
-  },
-  {
-    id: 2,
-    name: "Saltwater Reef",
-    type: "Saltwater",
-    size: "29 Gallon",
-    tasks: [
-      { name: "Water Change (10%)", frequency: 7, lastCompleted: null, history: [] },
-      { name: "Empty Skimmer Cup", frequency: 3, lastCompleted: null, history: [] },
-      { name: "Check Salinity", frequency: 7, lastCompleted: null, history: [] }
-    ]
-  },
-  {
-    id: 3,
-    name: "Community Tank",
-    type: "Freshwater",
-    size: "50 Gallon",
-    tasks: [
-      { name: "Water Change (25%)", frequency: 7, lastCompleted: null, history: [] },
-      { name: "Rinse Sponge Media", frequency: 14, lastCompleted: null, history: [] }
-    ]
-  },
-  {
-    id: 4,
-    name: "Betta Tank",
-    type: "Freshwater",
-    size: "3 Gallon",
-    tasks: [
-      { name: "Water Change (50%)", frequency: 7, lastCompleted: null, history: [] }
-    ]
-  },
-  {
-    id: 5,
-    name: "New Reef",
-    type: "Saltwater",
-    size: "90 Gallon",
-    tasks: [
-      { name: "Water Change (10%)", frequency: 7, lastCompleted: null, history: [] },
-      { name: "Empty Skimmer Cup", frequency: 3, lastCompleted: null, history: [] },
-      { name: "Check Salinity", frequency: 7, lastCompleted: null, history: [] }
-    ]
-  }
-];
+// Initial Data
+const initialData = {
+  homeAquariums: [
+    { id: 1, name: "Living Room Tank", lastWaterChange: "2023-10-25", temp: "78°F", ph: "7.2" },
+    { id: 2, name: "Bedroom Betta", lastWaterChange: "2023-10-20", temp: "80°F", ph: "7.0" },
+    { id: 3, name: "Office Shrimp", lastWaterChange: "2023-10-28", temp: "72°F", ph: "7.5" },
+  ],
+  hermitCrabs: [
+    { id: 4, name: "Main Crabitat", lastWaterChange: "N/A", humidity: "80%" },
+  ],
+  plants: [
+    { id: 5, name: "Monstera", lastWaterChange: "2023-10-26" },
+    { id: 6, name: "Pothos", lastWaterChange: "2023-10-22" },
+  ],
+  meemawsTank: [
+    { id: 7, name: "Meemaw's Guppies", lastWaterChange: "2023-10-15", temp: "75°F" },
+  ],
+  rodi: [
+    { id: 8, name: "Basement RODI", lastFilterChange: "2023-09-01", tds: "0" },
+  ],
+};
 
-function App() {
-  const [tanks, setTanks] = useState(() => {
-    // Bumped to V4 to force the new tank to appear
-    const saved = localStorage.getItem('aquariumDataV4'); 
-    return saved ? JSON.parse(saved) : INITIAL_DATA;
-  });
+export default function App() {
+  const [data, setData] = useState(initialData);
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-  const [expandedTask, setExpandedTask] = useState(null);
-
-  useEffect(() => {
-    localStorage.setItem('aquariumDataV4', JSON.stringify(tanks));
-  }, [tanks]);
-
-  const handleComplete = (tankId, taskIndex, side = null) => {
-    const newTanks = [...tanks];
-    const tank = newTanks.find(t => t.id === tankId);
-    const task = tank.tasks[taskIndex];
-    const now = new Date().toISOString();
+  // LOGIC: Updates the specific item's date to Today
+  const logWaterChange = (categoryKey, itemId) => {
+    const today = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
     
-    // Create the history entry object
-    const historyEntry = {
-      date: now,
-      side: side // This will be 'Left', 'Right', or null
-    };
-    
-    // Add to history
-    if (!task.history) task.history = [];
-    task.history = [historyEntry, ...task.history];
-    
-    // Update lastCompleted
-    task.lastCompleted = now; 
-
-    setTanks(newTanks);
-  };
-
-  const handleDeleteHistory = (tankId, taskIndex, historyIndex) => {
-    if(!window.confirm("Delete this specific history entry?")) return;
-
-    const newTanks = [...tanks];
-    const tank = newTanks.find(t => t.id === tankId);
-    const task = tank.tasks[taskIndex];
-
-    // Remove the item
-    task.history.splice(historyIndex, 1);
-
-    // Recalculate 'lastCompleted' based on the remaining history
-    if (task.history.length > 0) {
-      const newest = task.history[0];
-      task.lastCompleted = typeof newest === 'string' ? newest : newest.date;
-    } else {
-      task.lastCompleted = null;
-    }
-
-    setTanks(newTanks);
-  };
-
-  const toggleHistory = (tankId, taskIndex) => {
-    const key = `${tankId}-${taskIndex}`;
-    setExpandedTask(expandedTask === key ? null : key);
-  };
-
-  const resetData = () => {
-    if(window.confirm("Are you sure? This will delete ALL history and reset tank sizes.")) {
-      setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV4');
-    }
+    setData(prevData => {
+      const categoryList = prevData[categoryKey];
+      const updatedList = categoryList.map(item => {
+        if (item.id === itemId) {
+          return { ...item, lastWaterChange: today };
+        }
+        return item;
+      });
+      return { ...prevData, [categoryKey]: updatedList };
+    });
+    alert("Water change logged for today!");
   };
 
   return (
-    <div className="app-container">
-      <header>
-        <h1>Aquarium Manager 🐠</h1>
-        <p>Weekly Maintenance Tracker</p>
-      </header>
+    <Router>
+      <div className="min-h-screen bg-gray-100 flex font-sans">
+        {/* Mobile Sidebar Overlay */}
+        {isSidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
 
-      <div className="tank-grid">
-        {tanks.map(tank => {
-          // Parse size to number to check for "Over 29 Gallon" logic
-          const sizeNum = parseInt(tank.size);
-          const showSideButtons = sizeNum > 29;
+        {/* Sidebar */}
+        <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
+          <div className="p-4 flex justify-between items-center border-b border-slate-700">
+            <h1 className="text-xl font-bold">Tank Tracker</h1>
+            <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-white"><X size={24} /></button>
+          </div>
+          <nav className="p-4 space-y-2">
+            <Link to="/" onClick={() => setSidebarOpen(false)} className="block py-2 px-4 hover:bg-slate-800 rounded">Dashboard</Link>
+            <div className="pt-4 pb-2 text-xs text-slate-400 uppercase font-bold">Your Lists</div>
+            {Object.keys(data).map(key => (
+              <Link key={key} to={`/view/${key}`} onClick={() => setSidebarOpen(false)} className="block py-2 px-4 hover:bg-slate-800 rounded capitalize">
+                {key.replace(/([A-Z])/g, ' $1')}
+              </Link>
+            ))}
+          </nav>
+        </aside>
 
-          return (
-            <div key={tank.id} className={`tank-card ${tank.type.toLowerCase()}`}>
-              <div className="tank-header">
-                <h2>{tank.name}</h2>
-                <span className="badge">{tank.size} • {tank.type}</span>
-              </div>
+        {/* Main Content */}
+        <main className="flex-1 flex flex-col h-screen overflow-hidden">
+          <header className="bg-white shadow-sm p-4 flex items-center lg:hidden">
+            <button onClick={() => setSidebarOpen(true)} className="text-gray-700"><Menu size={24} /></button>
+            <span className="ml-4 font-bold text-lg">My Tanks</span>
+          </header>
+
+          <div className="flex-1 overflow-auto p-4">
+            <Routes>
+              {/* Pass the live data to Homepage */}
+              <Route path="/" element={<Homepage allData={data} />} />
               
-              <div className="task-list">
-                {tank.tasks.map((task, index) => {
-                  const lastDate = task.lastCompleted ? new Date(task.lastCompleted) : null;
-                  const nextDate = lastDate ? addDays(lastDate, task.frequency) : new Date();
-                  const daysDiff = differenceInDays(new Date(), nextDate);
-                  const isOverdue = lastDate ? daysDiff > 0 : true; 
-                  const uiKey = `${tank.id}-${index}`;
-
-                  return (
-                    <div key={index} className={`task-wrapper ${isOverdue ? 'overdue-wrapper' : ''}`}>
-                      <div className="task-row">
-                        <div className="task-info">
-                          <span className="task-name">{task.name}</span>
-                          <span className={`status ${isOverdue ? 'overdue' : 'good'}`}>
-                            {lastDate 
-                              ? isOverdue 
-                                ? `Overdue by ${daysDiff} days!` 
-                                : `Due in ${Math.abs(daysDiff)} days`
-                              : "Never done - Due Now!"}
-                          </span>
-                        </div>
-                        
-                        <div className="action-buttons">
-                          <button 
-                            onClick={() => toggleHistory(tank.id, index)}
-                            className="btn-icon"
-                            title="View History"
-                          >
-                            {expandedTask === uiKey ? <ChevronUp size={18}/> : <Clock size={18} />}
-                          </button>
-
-                          {/* LOGIC: Show split buttons for big tanks, single button for small tanks */}
-                          {showSideButtons ? (
-                            <div className="split-btn-group">
-                              <button 
-                                onClick={() => handleComplete(tank.id, index, 'Left')}
-                                className="btn-complete btn-split-l"
-                              >
-                                L
-                              </button>
-                              <button 
-                                onClick={() => handleComplete(tank.id, index, 'Right')}
-                                className="btn-complete btn-split-r"
-                              >
-                                R
-                              </button>
-                            </div>
-                          ) : (
-                            <button 
-                              onClick={() => handleComplete(tank.id, index, null)}
-                              className="btn-complete"
-                            >
-                              <CheckCircle size={16} /> Done
-                            </button>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* HISTORY DROPDOWN */}
-                      {expandedTask === uiKey && (
-                        <div className="history-list">
-                          <div className="history-header">History Log</div>
-                          {task.history && task.history.length > 0 ? (
-                            <ul>
-                              {task.history.map((entry, hIndex) => {
-                                const dateStr = typeof entry === 'string' ? entry : entry.date;
-                                const side = typeof entry === 'object' ? entry.side : null;
-
-                                return (
-                                  <li key={hIndex}>
-                                    <span>
-                                      {format(new Date(dateStr), 'MMM d, yyyy')} 
-                                      <span className="history-time"> {format(new Date(dateStr), 'h:mm a')}</span>
-                                      {side && <span className="side-badge">{side}</span>}
-                                    </span>
-                                    <button 
-                                      className="btn-delete-entry"
-                                      onClick={() => handleDeleteHistory(tank.id, index, hIndex)}
-                                      title="Delete this entry"
-                                    >
-                                      <Trash2 size={14} />
-                                    </button>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          ) : (
-                            <p className="no-history">No history recorded yet.</p>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })}
+              {/* Pass the update function to SwipeView */}
+              <Route path="/view/:categoryId" element={<SwipeViewWrapper data={data} onLog={logWaterChange} />} />
+            </Routes>
+          </div>
+        </main>
       </div>
-
-      <footer>
-        <button onClick={resetData} className="btn-reset">
-          <Trash2 size={14}/> Reset All Data
-        </button>
-      </footer>
-    </div>
+    </Router>
   );
 }
 
-export default App;
+function SwipeViewWrapper({ data, onLog }) {
+  const { categoryId } = useParams();
+  const items = data[categoryId] || [];
+  return <SwipeView categoryId={categoryId} items={items} onLog={onLog} />;
+}
