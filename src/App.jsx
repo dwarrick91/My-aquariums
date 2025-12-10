@@ -9,7 +9,7 @@ import './App.css';
 const INITIAL_DATA = [
   {
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
-    notes: [], // <--- NEW: Notes Array
+    notes: [],
     tasks: [
       { name: "Water Change (20%)", frequency: 7, lastCompleted: null, history: [] },
       { name: "Clean Canister Filters", frequency: 30, lastCompleted: null, history: [] }
@@ -61,7 +61,7 @@ const INITIAL_DATA = [
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    const saved = localStorage.getItem('aquariumDataV11'); // Bumped to V11
+    const saved = localStorage.getItem('aquariumDataV11');
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
@@ -102,7 +102,6 @@ function App() {
     setTanks(newTanks);
   };
 
-  // --- NEW: ADD NOTE LOGIC ---
   const handleAddNote = (tankId, text) => {
     if (!text.trim()) return;
     const newTanks = [...tanks];
@@ -110,16 +109,15 @@ function App() {
     if (!tank.notes) tank.notes = [];
     
     const newNote = {
-      id: Date.now(), // Simple unique ID
+      id: Date.now(), 
       date: new Date().toISOString(),
       text: text
     };
     
-    tank.notes.unshift(newNote); // Add to top of list
+    tank.notes.unshift(newNote); 
     setTanks(newTanks);
   };
 
-  // --- NEW: DELETE NOTE LOGIC ---
   const handleDeleteNote = (tankId, noteId) => {
     if(!window.confirm("Delete this note?")) return;
     const newTanks = [...tanks];
@@ -173,12 +171,19 @@ function App() {
                   tanks={tanks} 
                   onComplete={handleComplete} 
                   onDeleteHistory={handleDeleteHistory}
-                  onAddNote={handleAddNote}       // Pass Note Function
-                  onDeleteNote={handleDeleteNote} // Pass Note Function
+                  onAddNote={handleAddNote}       
+                  onDeleteNote={handleDeleteNote} 
                   onReset={resetData} 
                 />
               } />
-              <Route path="/swipe/:category" element={<SwipeWrapper tanks={tanks} onComplete={handleComplete} />} />
+              <Route path="/swipe/:category" element={
+                <SwipeWrapper 
+                  tanks={tanks} 
+                  onComplete={handleComplete} 
+                  onAddNote={handleAddNote}      // Pass this down
+                  onDeleteNote={handleDeleteNote} // Pass this down
+                />
+              } />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
@@ -188,21 +193,31 @@ function App() {
   );
 }
 
-const SwipeWrapper = ({ tanks, onComplete }) => {
+// Updated SwipeWrapper to accept note props
+const SwipeWrapper = ({ tanks, onComplete, onAddNote, onDeleteNote }) => {
   const { category } = useParams();
   const filteredTanks = tanks.filter(t => t.category === category);
-  return <SwipeView tanks={filteredTanks} onComplete={onComplete} categoryName={category} />;
+  return <SwipeView 
+            tanks={filteredTanks} 
+            onComplete={onComplete} 
+            onAddNote={onAddNote} 
+            onDeleteNote={onDeleteNote} 
+            categoryName={category} 
+         />;
 };
 
-// --- UPDATED DASHBOARD WITH NOTES UI ---
+// ... CleanDashboard code remains same as before ...
 const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDeleteNote, onReset }) => {
+  // (Paste the CleanDashboard code from the previous working step here, or leave as is if you already have it)
+  // For brevity, I am omitting the full CleanDashboard repetition unless you need it, 
+  // but ensure it accepts the same props as above.
   const [expandedTankId, setExpandedTankId] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);
-  const [noteInput, setNoteInput] = useState(""); // State for note input
+  const [noteInput, setNoteInput] = useState("");
 
   const toggleTank = (id) => {
     setExpandedTankId(expandedTankId === id ? null : id);
-    setNoteInput(""); // Clear input when switching tanks
+    setNoteInput("");
   };
 
   const toggleHistory = (e, uniqueKey) => {
@@ -258,7 +273,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
 
               {isOpen && (
                 <div className="card-body">
-                  {/* --- TASKS SECTION --- */}
                   {tank.tasks.map((task, index) => {
                     const lastDate = task.lastCompleted ? new Date(task.lastCompleted) : null;
                     const nextDate = lastDate ? addDays(lastDate, task.frequency) : new Date();
@@ -319,17 +333,14 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
                     );
                   })}
 
-                  {/* --- NEW NOTES SECTION --- */}
                   <div className="notes-section">
                     <div className="notes-title">Tank Notes</div>
-                    
-                    {/* Add Note Input */}
                     <div className="note-input-group">
                       <input 
                         type="text" 
                         value={noteInput}
                         onChange={(e) => setNoteInput(e.target.value)}
-                        placeholder="Add a note (e.g. Added new fish)..."
+                        placeholder="Add a note..."
                         className="note-input"
                         onKeyDown={(e) => e.key === 'Enter' && submitNote(tank.id)}
                       />
@@ -337,27 +348,20 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
                         <Plus size={18} />
                       </button>
                     </div>
-
-                    {/* Notes List */}
                     <div className="notes-list">
                       {tank.notes && tank.notes.length > 0 ? (
                         tank.notes.map((note) => (
                           <div key={note.id} className="note-item">
                             <div className="note-content">
-                              <span className="note-date">{format(new Date(note.date), 'MMM d, yyyy h:mm a')}</span>
+                              <span className="note-date">{format(new Date(note.date), 'MMM d, h:mm a')}</span>
                               <span>{note.text}</span>
                             </div>
-                            <button onClick={() => onDeleteNote(tank.id, note.id)} className="btn-delete-note">
-                              <Trash2 size={14} />
-                            </button>
+                            <button onClick={() => onDeleteNote(tank.id, note.id)} className="btn-delete-note"><Trash2 size={14} /></button>
                           </div>
                         ))
-                      ) : (
-                        <p style={{fontSize:'0.85rem', color:'#cbd5e1', fontStyle:'italic', textAlign:'center'}}>No notes yet.</p>
-                      )}
+                      ) : <p style={{fontSize:'0.85rem', color:'#cbd5e1', fontStyle:'italic', textAlign:'center'}}>No notes yet.</p>}
                     </div>
                   </div>
-
                 </div>
               )}
             </div>
