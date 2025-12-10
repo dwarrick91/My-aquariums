@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useParams } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
-import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Droplets } from 'lucide-react';
+import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X } from 'lucide-react';
 import SwipeView from './SwipeView';
 import './App.css';
 
 // --- DATA CONFIGURATION ---
 const INITIAL_DATA = [
-  // HOME AQUARIUMS
   {
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
     tasks: [
@@ -34,43 +33,36 @@ const INITIAL_DATA = [
     id: 4, name: "Betta Tank", category: "home", type: "Freshwater", size: "3 Gallon",
     tasks: [{ name: "Water Change (50%)", frequency: 7, lastCompleted: null, history: [] }]
   },
-  // MEEMAW
   {
     id: 5, name: "Meemaw's Guppies", category: "meemaw", type: "Freshwater", size: "10 Gallon",
     tasks: [{ name: "Water Change (10%)", frequency: 7, lastCompleted: null, history: [] }]
   },
-  // HERMITS
   {
     id: 6, name: "Crabitat", category: "hermit", type: "Terrarium", size: "20 Gallon",
     tasks: [{ name: "Mist & Water", frequency: 2, lastCompleted: null, history: [] }]
   },
-  // PLANTS
   {
     id: 7, name: "Living Room Monstera", category: "plants", type: "Plant", size: "Pot",
     tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
   },
-  // RODI
   {
     id: 8, name: "Basement System", category: "rodi", type: "Filter", size: "System",
     tasks: [{ name: "Change Sediment Filter", frequency: 180, lastCompleted: null, history: [] }]
   }
 ];
 
-// --- MAIN APP ---
 function App() {
-  // Use V7 to ensure clean data load
   const [tanks, setTanks] = useState(() => {
-    const saved = localStorage.getItem('aquariumDataV7'); 
+    const saved = localStorage.getItem('aquariumDataV8'); // Version 8
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV7', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV8', JSON.stringify(tanks));
   }, [tanks]);
 
-  // --- CORE LOGIC ---
   const handleComplete = (tankId, taskIndex, side = null) => {
     const newTanks = [...tanks];
     const tank = newTanks.find(t => t.id === tankId);
@@ -105,52 +97,53 @@ function App() {
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV7');
+      localStorage.removeItem('aquariumDataV8');
     }
   };
 
   return (
     <Router>
-      <div className="flex h-screen bg-gray-100 font-sans">
+      <div className="app-container">
         
-        {/* MOBILE OVERLAY */}
+        {/* Mobile Overlay */}
         {isSidebarOpen && (
-          <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setSidebarOpen(false)}/>
+          <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>
         )}
 
-        {/* SIDEBAR */}
-        <aside className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-white transform transition-transform duration-300 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}>
-          <div className="p-4 flex justify-between items-center border-b border-slate-700">
-            <h1 className="text-xl font-bold">Tank Tracker</h1>
-            <button onClick={() => setSidebarOpen(false)} className="lg:hidden"><X size={24}/></button>
+        {/* Sidebar */}
+        <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
+          <div className="sidebar-header">
+            <h1>Tank Tracker</h1>
+            <button onClick={() => setSidebarOpen(false)} style={{background:'none', border:'none', color:'white'}} className="lg-hidden">
+                <X size={24}/>
+            </button>
           </div>
-          <nav className="p-4 space-y-2">
-            <Link to="/" onClick={() => setSidebarOpen(false)} className="block py-2 px-4 hover:bg-slate-800 rounded font-bold text-blue-200">
+          <nav className="sidebar-nav">
+            <Link to="/" onClick={() => setSidebarOpen(false)} className="nav-link">
               Dashboard (Overview)
             </Link>
             
-            <div className="pt-4 pb-2 text-xs text-slate-400 uppercase font-bold">Swipe Lists</div>
+            <div className="section-label">Swipe Lists</div>
             
-            <Link to="/swipe/home" onClick={() => setSidebarOpen(false)} className="block py-2 px-4 hover:bg-slate-800 rounded">Home Aquariums</Link>
-            <Link to="/swipe/hermit" onClick={() => setSidebarOpen(false)} className="block py-2 px-4 hover:bg-slate-800 rounded">Hermit Crabs</Link>
-            <Link to="/swipe/plants" onClick={() => setSidebarOpen(false)} className="block py-2 px-4 hover:bg-slate-800 rounded">Plants</Link>
-            <Link to="/swipe/meemaw" onClick={() => setSidebarOpen(false)} className="block py-2 px-4 hover:bg-slate-800 rounded">Meemaw's Tank</Link>
-            <Link to="/swipe/rodi" onClick={() => setSidebarOpen(false)} className="block py-2 px-4 hover:bg-slate-800 rounded">RODI</Link>
+            <Link to="/swipe/home" onClick={() => setSidebarOpen(false)} className="nav-link">Home Aquariums</Link>
+            <Link to="/swipe/hermit" onClick={() => setSidebarOpen(false)} className="nav-link">Hermit Crabs</Link>
+            <Link to="/swipe/plants" onClick={() => setSidebarOpen(false)} className="nav-link">Plants</Link>
+            <Link to="/swipe/meemaw" onClick={() => setSidebarOpen(false)} className="nav-link">Meemaw's Tank</Link>
+            <Link to="/swipe/rodi" onClick={() => setSidebarOpen(false)} className="nav-link">RODI</Link>
           </nav>
         </aside>
 
-        {/* MAIN CONTENT */}
-        <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-          <header className="bg-white shadow-sm p-4 flex items-center justify-between lg:hidden z-10">
-            <div className="flex items-center">
-                <button onClick={() => setSidebarOpen(true)} className="text-gray-700 mr-4"><Menu size={24} /></button>
-                <span className="font-bold text-lg">My Tanks</span>
-            </div>
+        {/* Main Content */}
+        <main className="main-content">
+          <header className="mobile-header">
+            <button onClick={() => setSidebarOpen(true)} style={{background:'none', border:'none'}}>
+                <Menu size={24} color="#334155" />
+            </button>
+            <h2>My Tanks</h2>
           </header>
 
-          <div className="flex-1 overflow-auto p-4 md:p-8" id="main-scroll">
+          <div className="content-scroll-area">
             <Routes>
-              {/* CLEAN DASHBOARD ROUTE */}
               <Route path="/" element={
                 <CleanDashboard 
                    tanks={tanks} 
@@ -160,7 +153,6 @@ function App() {
                 />
               } />
 
-              {/* SWIPE VIEW ROUTE */}
               <Route path="/swipe/:category" element={
                 <SwipeWrapper tanks={tanks} onComplete={handleComplete} />
               } />
@@ -172,14 +164,12 @@ function App() {
   );
 }
 
-// --- HELPER 1: SWIPE WRAPPER ---
 const SwipeWrapper = ({ tanks, onComplete }) => {
   const { category } = useParams();
   const filteredTanks = tanks.filter(t => t.category === category);
   return <SwipeView tanks={filteredTanks} onComplete={onComplete} categoryName={category} />;
 };
 
-// --- HELPER 2: NEW CLEAN DASHBOARD (COLLAPSIBLE) ---
 const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
   const [expandedTankId, setExpandedTankId] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);
@@ -193,7 +183,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
     setExpandedTask(expandedTask === uniqueKey ? null : uniqueKey);
   };
 
-  // Calculate status for top banner
   const totalOverdue = tanks.reduce((acc, tank) => {
     return acc + tank.tasks.filter(t => {
       if (!t.lastCompleted) return true;
@@ -203,52 +192,44 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
   }, 0);
 
   return (
-    <div className="max-w-4xl mx-auto pb-20">
-      {/* STATUS BANNER */}
-      <div className="mb-6 bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+    <div className="dashboard-container">
+      {/* Status Banner */}
+      <div className="status-banner">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">My Aquarium</h1>
-          <p className="text-slate-500 text-sm">Overview</p>
+          <h1 style={{margin:0, fontSize:'1.5rem', color:'#1e293b'}}>My Aquarium</h1>
+          <p style={{margin:0, color:'#64748b'}}>Overview</p>
         </div>
-        <div className={`px-4 py-2 rounded-xl font-bold text-sm ${totalOverdue > 0 ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+        <div className={`status-badge ${totalOverdue > 0 ? 'red' : 'green'}`}>
           {totalOverdue > 0 ? `${totalOverdue} Tasks Overdue` : "All Systems Normal"}
         </div>
       </div>
 
-      {/* TANK LIST */}
-      <div className="space-y-4">
+      {/* Tank List */}
+      <div>
         {tanks.map(tank => {
           const isOpen = expandedTankId === tank.id;
-          
-          // Check tank health (Red/Green Dot Logic)
           const tankOverdueCount = tank.tasks.filter(t => {
             if (!t.lastCompleted) return true;
             return differenceInDays(new Date(), addDays(new Date(t.lastCompleted), t.frequency)) > 0;
           }).length;
           
           return (
-            <div key={tank.id} className={`bg-white rounded-xl shadow-sm border transition-all duration-300 overflow-hidden ${isOpen ? 'ring-2 ring-blue-500 border-transparent' : 'border-gray-200'}`}>
-              
-              {/* HEADER (CLICK TO OPEN) */}
-              <button 
-                onClick={() => toggleTank(tank.id)}
-                className="w-full flex items-center justify-between p-5 text-left bg-white hover:bg-slate-50 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  {/* Status Dot */}
-                  <div className={`w-3 h-3 rounded-full shadow-sm ${tankOverdueCount > 0 ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`} />
-                  
-                  <div>
-                    <h2 className="font-bold text-slate-800 text-lg">{tank.name}</h2>
-                    <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">{tank.size} • {tank.type}</p>
+            <div key={tank.id} className={`tank-card ${isOpen ? 'open' : ''}`}>
+              {/* Header */}
+              <button onClick={() => toggleTank(tank.id)} className="card-header">
+                <div className="tank-info">
+                  <div className={`status-dot ${tankOverdueCount > 0 ? 'red' : 'green'}`} />
+                  <div className="tank-details">
+                    <h3>{tank.name}</h3>
+                    <p>{tank.size} • {tank.type}</p>
                   </div>
                 </div>
-                {isOpen ? <ChevronUp className="text-blue-500" /> : <ChevronDown className="text-slate-300" />}
+                {isOpen ? <ChevronUp size={20} color="#3b82f6" /> : <ChevronDown size={20} color="#cbd5e1" />}
               </button>
 
-              {/* BODY (TASKS) */}
+              {/* Body */}
               {isOpen && (
-                <div className="bg-slate-50 border-t border-slate-100 p-4 space-y-3">
+                <div className="card-body">
                   {tank.tasks.map((task, index) => {
                     const lastDate = task.lastCompleted ? new Date(task.lastCompleted) : null;
                     const nextDate = lastDate ? addDays(lastDate, task.frequency) : new Date();
@@ -258,47 +239,47 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
                     const showSideButtons = parseInt(tank.size) > 29;
 
                     return (
-                      <div key={index} className="bg-white p-4 rounded-lg shadow-sm border border-slate-200">
-                        <div className="flex justify-between items-start mb-3">
+                      <div key={index} className="task-item">
+                        <div className="task-header">
                           <div>
-                            <span className="font-semibold text-slate-700 block">{task.name}</span>
-                            <span className={`text-xs font-bold ${isOverdue ? 'text-red-500' : 'text-slate-400'}`}>
+                            <span style={{display:'block', fontWeight:600, color:'#334155'}}>{task.name}</span>
+                            <span className={`due-text ${isOverdue ? 'red' : 'gray'}`}>
                               {isOverdue ? `Due ${daysDiff} days ago` : `Due in ${Math.abs(daysDiff)} days`}
                             </span>
                           </div>
-                          <button onClick={(e) => toggleHistory(e, uiKey)} className="text-slate-400 hover:text-blue-600 p-1">
+                          <button onClick={(e) => toggleHistory(e, uiKey)} style={{border:'none', background:'none', cursor:'pointer', color:'#94a3b8'}}>
                             <Clock size={16} />
                           </button>
                         </div>
 
-                        {/* BUTTONS */}
-                        <div className="flex gap-2">
+                        {/* Buttons */}
+                        <div className="btn-group">
                           {showSideButtons ? (
                             <>
-                              <button onClick={() => onComplete(tank.id, index, 'Left')} className="flex-1 py-3 bg-blue-100 text-blue-700 font-bold rounded hover:bg-blue-200">Left</button>
-                              <button onClick={() => onComplete(tank.id, index, 'Right')} className="flex-1 py-3 bg-blue-100 text-blue-700 font-bold rounded hover:bg-blue-200">Right</button>
+                              <button onClick={() => onComplete(tank.id, index, 'Left')} className="btn btn-secondary">Left</button>
+                              <button onClick={() => onComplete(tank.id, index, 'Right')} className="btn btn-secondary">Right</button>
                             </>
                           ) : (
-                            <button onClick={() => onComplete(tank.id, index, null)} className="flex-1 py-3 bg-blue-600 text-white font-bold rounded hover:bg-blue-700 flex items-center justify-center gap-2">
+                            <button onClick={() => onComplete(tank.id, index, null)} className="btn btn-primary">
                               <CheckCircle size={16} /> Complete
                             </button>
                           )}
                         </div>
 
-                        {/* HISTORY */}
+                        {/* History */}
                         {expandedTask === uiKey && (
-                           <div className="mt-3 pt-3 border-t border-slate-100 text-sm">
-                             <p className="text-xs font-bold text-slate-400 uppercase mb-2">History</p>
+                           <div style={{marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid #e2e8f0'}}>
+                             <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#94a3b8', textTransform:'uppercase'}}>History</p>
                              {task.history && task.history.length > 0 ? (
-                               <ul className="space-y-2">
+                               <ul style={{listStyle:'none', padding:0, margin:'0.5rem 0'}}>
                                  {task.history.slice(0, 3).map((entry, hIndex) => (
-                                   <li key={hIndex} className="flex justify-between text-slate-600">
+                                   <li key={hIndex} style={{display:'flex', justifyContent:'space-between', padding:'0.25rem 0', color:'#64748b', fontSize:'0.9rem'}}>
                                      <span>{format(new Date(entry.date || entry), 'MMM d')}</span>
-                                     <button onClick={() => onDeleteHistory(tank.id, index, hIndex)} className="text-red-400 hover:text-red-600"><Trash2 size={12}/></button>
+                                     <button onClick={() => onDeleteHistory(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>
                                    </li>
                                  ))}
                                </ul>
-                             ) : <span className="text-slate-400 italic">No history</span>}
+                             ) : <span style={{color:'#cbd5e1', fontStyle:'italic', fontSize:'0.9rem'}}>No history</span>}
                            </div>
                         )}
                       </div>
@@ -311,11 +292,11 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onReset }) => {
         })}
       </div>
 
-      <footer className="mt-12 text-center">
-        <button onClick={onReset} className="text-slate-400 text-sm hover:text-red-500 flex items-center gap-2 justify-center mx-auto">
+      <div style={{textAlign:'center'}}>
+        <button onClick={onReset} className="btn-reset">
           <Trash2 size={14}/> Reset All Data
         </button>
-      </footer>
+      </div>
     </div>
   );
 };
