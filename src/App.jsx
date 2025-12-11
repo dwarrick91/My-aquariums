@@ -63,7 +63,7 @@ const INITIAL_DATA = [
     tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
-    id: 8, name: "Filter 1", category: "rodi", type: "Sediment", size: "Stage 1",
+    id: 801, name: "Filter 1", category: "rodi", type: "Sediment", size: "Stage 1",
     notes: [],
     tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
   },
@@ -94,7 +94,7 @@ const INITIAL_DATA = [
   }
 ];
 
-// --- UNIVERSAL ITEM MODAL (Add & Edit & Delete) ---
+// --- UNIVERSAL ITEM MODAL (Updated UI) ---
 const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
   const defaultState = {
     name: '',
@@ -152,7 +152,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
       <div className="modal-content">
         <div className="modal-header">
           <h2>{modalTitle}</h2>
-          <button onClick={onClose} style={{border:'none', background:'none', cursor:'pointer'}}><X size={24}/></button>
+          <button onClick={onClose} className="btn-close"><X size={20}/></button>
         </div>
         
         <form onSubmit={handleSubmit}>
@@ -169,39 +169,66 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
 
           <div className="form-group">
             <label className="form-label">Name</label>
-            <input name="name" placeholder="e.g. Living Room Tank" value={formData.name} onChange={handleChange} className="form-input" required />
+            <input 
+              name="name" 
+              placeholder="e.g. Living Room Tank" 
+              value={formData.name} 
+              onChange={handleChange} 
+              className="form-input" 
+              required 
+            />
           </div>
 
           <div className="form-group">
             <label className="form-label">{typeLabel}</label>
-            <input name="type" placeholder={isPlant ? "Houseplant" : "Freshwater"} value={formData.type} onChange={handleChange} className="form-input" required />
+            <input 
+              name="type" 
+              placeholder={isPlant ? "Houseplant" : "Freshwater"} 
+              value={formData.type} 
+              onChange={handleChange} 
+              className="form-input" 
+              required 
+            />
           </div>
 
           <div className="form-group">
             <label className="form-label">{sizeLabel}</label>
-            <input name="size" placeholder={isPlant ? "Pot" : "75 Gallon"} value={formData.size} onChange={handleChange} className="form-input" required />
+            <input 
+              name="size" 
+              placeholder={isPlant ? "Pot" : "75 Gallon"} 
+              value={formData.size} 
+              onChange={handleChange} 
+              className="form-input" 
+              required 
+            />
           </div>
 
           <div className="form-group">
             <label className="form-label">Task Frequency (Days)</label>
-            <input type="number" name="frequency" value={formData.frequency} onChange={handleChange} className="form-input" min="1" required />
+            <input 
+              type="number" 
+              name="frequency" 
+              value={formData.frequency} 
+              onChange={handleChange} 
+              className="form-input" 
+              min="1" 
+              required 
+            />
           </div>
 
           <div className="modal-actions">
-            {/* DELETE BUTTON (Only shown when editing) */}
             {itemToEdit && (
                 <button 
                     type="button" 
                     onClick={handleDeleteClick} 
-                    className="btn btn-danger"
-                    style={{ marginRight: 'auto' }} // Pushes other buttons to the right
+                    className="btn-delete-modal"
                 >
                     <Trash2 size={18} /> Delete
                 </button>
             )}
 
-            <button type="button" onClick={onClose} className="btn btn-secondary">Cancel</button>
-            <button type="submit" className="btn btn-primary">{buttonText}</button>
+            <button type="button" onClick={onClose} className="btn-cancel">Cancel</button>
+            <button type="submit" className="btn-save">{buttonText}</button>
           </div>
         </form>
       </div>
@@ -211,20 +238,24 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // V16
+    // V16 forces fresh data structure
     const saved = localStorage.getItem('aquariumDataV16'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
+  
+  // MODAL STATES
   const [isModalOpen, setModalOpen] = useState(false);
-  const [editingItem, setEditingItem] = useState(null);
+  const [editingItem, setEditingItem] = useState(null); 
+  
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     localStorage.setItem('aquariumDataV16', JSON.stringify(tanks));
   }, [tanks]);
 
+  // --- MODAL HANDLERS ---
   const openAddModal = () => {
     setEditingItem(null); 
     setModalOpen(true);
@@ -235,11 +266,11 @@ function App() {
     setModalOpen(true);
   };
 
-  // --- DELETE LOGIC ---
+  // --- DATA LOGIC ---
   const handleDeleteItem = (id) => {
     if(window.confirm("Are you sure you want to delete this tank/plant permanently?")) {
         setTanks(prevTanks => prevTanks.filter(item => item.id !== id));
-        setModalOpen(false); // Close the modal after deleting
+        setModalOpen(false); 
     }
   };
 
@@ -337,6 +368,7 @@ function App() {
     }
   };
 
+  // --- BACKUP & RESTORE ---
   const backupData = () => {
     const jsonString = JSON.stringify(tanks, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
@@ -382,11 +414,12 @@ function App() {
       <div className="app-container">
         {isSidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>}
         
+        {/* REUSED ITEM MODAL */}
         <ItemModal 
           isOpen={isModalOpen} 
           onClose={() => setModalOpen(false)} 
           onSave={handleSaveItem}
-          onDelete={handleDeleteItem} // Pass the delete function
+          onDelete={handleDeleteItem}
           itemToEdit={editingItem} 
         />
 
