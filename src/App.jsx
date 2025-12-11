@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-// 1. CHANGED: Import HashRouter instead of BrowserRouter
 import { HashRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
 import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, MessageSquare, Download, Upload, Pencil } from 'lucide-react';
@@ -95,8 +94,8 @@ const INITIAL_DATA = [
   }
 ];
 
-// --- UNIVERSAL ITEM MODAL (Add & Edit) ---
-const ItemModal = ({ isOpen, onClose, onSave, itemToEdit }) => {
+// --- UNIVERSAL ITEM MODAL (Add & Edit & Delete) ---
+const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
   const defaultState = {
     name: '',
     category: 'home',
@@ -134,6 +133,12 @@ const ItemModal = ({ isOpen, onClose, onSave, itemToEdit }) => {
     e.preventDefault();
     onSave(formData);
     onClose();
+  };
+
+  const handleDeleteClick = () => {
+    if (itemToEdit) {
+        onDelete(itemToEdit.id);
+    }
   };
 
   const isPlant = formData.category === 'plants';
@@ -183,6 +188,18 @@ const ItemModal = ({ isOpen, onClose, onSave, itemToEdit }) => {
           </div>
 
           <div className="modal-actions">
+            {/* DELETE BUTTON (Only shown when editing) */}
+            {itemToEdit && (
+                <button 
+                    type="button" 
+                    onClick={handleDeleteClick} 
+                    className="btn btn-danger"
+                    style={{ marginRight: 'auto' }} // Pushes other buttons to the right
+                >
+                    <Trash2 size={18} /> Delete
+                </button>
+            )}
+
             <button type="button" onClick={onClose} className="btn btn-secondary">Cancel</button>
             <button type="submit" className="btn btn-primary">{buttonText}</button>
           </div>
@@ -216,6 +233,14 @@ function App() {
   const openEditModal = (item) => {
     setEditingItem(item); 
     setModalOpen(true);
+  };
+
+  // --- DELETE LOGIC ---
+  const handleDeleteItem = (id) => {
+    if(window.confirm("Are you sure you want to delete this tank/plant permanently?")) {
+        setTanks(prevTanks => prevTanks.filter(item => item.id !== id));
+        setModalOpen(false); // Close the modal after deleting
+    }
   };
 
   const handleSaveItem = (formData) => {
@@ -361,6 +386,7 @@ function App() {
           isOpen={isModalOpen} 
           onClose={() => setModalOpen(false)} 
           onSave={handleSaveItem}
+          onDelete={handleDeleteItem} // Pass the delete function
           itemToEdit={editingItem} 
         />
 
