@@ -5,7 +5,7 @@ import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Down
 import SwipeView from './SwipeView';
 import './App.css';
 
-// --- FULL DATA CONFIGURATION (Restored V41) ---
+// --- FULL DATA CONFIGURATION (Restored V43) ---
 const INITIAL_DATA = [
   {
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
@@ -196,7 +196,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
           <button onClick={onClose} className="btn-close"><X size={20}/></button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div style={{marginBottom:'1.5rem', display:'flex', flexDirection:'column', alignItems:'center'}}>
+          <div style={{marginBottom:'1rem', display:'flex', flexDirection:'column', alignItems:'center'}}>
              <div 
                style={{
                  width:'80px', height:'80px', borderRadius:'50%', 
@@ -211,7 +211,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
                 ) : (
                     <div style={{textAlign:'center', color:'#94a3b8'}}>
                         <ImageIcon size={20} style={{marginBottom:'2px'}}/>
-                        <div style={{fontSize:'0.7rem'}}>Add Photo</div>
+                        <div style={{fontSize:'0.6rem'}}>Add Photo</div>
                     </div>
                 )}
              </div>
@@ -239,7 +239,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
                         className="form-input" 
                         required
                     />
-                    <button type="button" onClick={() => setIsNewCategoryMode(false)} className="btn-cancel" style={{padding:'0.75rem'}}>Cancel</button>
+                    <button type="button" onClick={() => setIsNewCategoryMode(false)} className="btn-cancel" style={{padding:'0.6rem'}}>Cancel</button>
                 </div>
             )}
           </div>
@@ -276,7 +276,8 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    const saved = localStorage.getItem('aquariumDataV41'); 
+    // V43 to restore data and fix sync logic
+    const saved = localStorage.getItem('aquariumDataV43'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
@@ -291,7 +292,7 @@ function App() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV41', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV43', JSON.stringify(tanks));
   }, [tanks]);
 
   useEffect(() => {
@@ -308,6 +309,8 @@ function App() {
     }
   };
 
+  // --- IMMUTABLE STATE HANDLERS (FIXES DATA SYNC) ---
+
   const handleSaveItem = (formData, newCategoryLabel) => {
     if (newCategoryLabel) {
         if (!categories.includes(formData.category)) {
@@ -318,10 +321,12 @@ function App() {
     if (editingItem) {
       setTanks(prevTanks => prevTanks.map(tank => {
         if (tank.id === editingItem.id) {
-          const updatedTasks = [...tank.tasks];
-          if (updatedTasks.length > 0) {
-            updatedTasks[0] = { ...updatedTasks[0], frequency: parseInt(formData.frequency) };
-          }
+          // Creating a FRESH copy of the tasks array
+          const updatedTasks = tank.tasks.map((task, i) => {
+             if(i === 0) return { ...task, frequency: parseInt(formData.frequency) };
+             return task;
+          });
+          
           return {
             ...tank,
             name: formData.name,
@@ -349,85 +354,140 @@ function App() {
         notes: [],
         tasks: [{ name: taskName, frequency: parseInt(formData.frequency), lastCompleted: null, history: [] }]
       };
-      setTanks([...tanks, newItem]);
+      setTanks(prev => [...prev, newItem]);
     }
   };
 
   const handleComplete = (tankId, taskIndex, side = null) => {
-    const newTanks = [...tanks];
-    const tank = newTanks.find(t => t.id === tankId);
-    const task = tank.tasks[taskIndex];
-    const now = new Date().toISOString();
-    const historyEntry = { date: now, side: side };
-    if (!task.history) task.history = [];
-    task.history = [historyEntry, ...task.history];
-    task.lastCompleted = now; 
-    setTanks(newTanks);
+    setTanks(prevTanks => prevTanks.map(tank => {
+        if (tank.id !== tankId) return tank;
+
+        // Map over tasks to find the specific one and return a NEW object for it
+        const newTasks = tank.tasks.map((task, idx) => {
+            if (idx !== taskIndex) return task;
+
+            const now = new Date().toISOString();
+            return {
+                ...task,
+                lastCompleted: now,
+                history: [{ date: now, side: side }, ...task.history]
+            };
+        });
+
+        // Return a NEW tank object
+        return { ...tank, tasks: newTasks };
+    }));
   };
 
   const handleDeleteHistory = (tankId, taskIndex, historyIndex) => {
     if(!window.confirm("Delete this history entry?")) return;
-    const newTanks = [...tanks];
-    const tank = newTanks.find(t => t.id === tankId);
-    const task = tank.tasks[taskIndex];
-    task.history.splice(historyIndex, 1);
-    if (task.history.length > 0) {
-      const newest = task.history[0];
-      task.lastCompleted = typeof newest === 'string' ? newest : newest.date;
-    } else {
-      task.lastCompleted = null;
-    }
-    setTanks(newTanks);
+    
+    setTanks(prevTanks => prevTanks.map(tank => {
+        if (tank.id !== tankId) return tank;
+
+        const newTasks = tank.tasks.map((task, idx) => {
+            if (idx !== taskIndex) return task;
+
+            const newHistory = [...task.history];
+            newHistory.splice(historyIndex, 1);
+            
+            // Re-calculate last completed based on new top of stack
+            let newLastCompleted = null;
+            if(newHistory.length > 0) {
+                const newest = newHistory[0];
+                newLastCompleted = typeof newest === 'string' ? newest : newest.date;
+            }
+
+            return {
+                ...task,
+                lastCompleted: newLastCompleted,
+                history: newHistory
+            };
+        });
+
+        return { ...tank, tasks: newTasks };
+    }));
   };
 
   const handleEditHistory = (tankId, taskIndex, historyIndex, newDateString) => {
-    const newTanks = [...tanks];
-    const tank = newTanks.find(t => t.id === tankId);
-    const task = tank.tasks[taskIndex];
-    const [year, month, day] = newDateString.split('-').map(Number);
-    const fixedDate = new Date(year, month - 1, day);
-    const newIsoString = fixedDate.toISOString();
-    const entry = task.history[historyIndex];
-    if (typeof entry === 'object') {
-        entry.date = newIsoString;
-    } else {
-        task.history[historyIndex] = newIsoString;
-    }
-    task.history.sort((a, b) => {
-        const dateA = new Date(typeof a === 'string' ? a : a.date);
-        const dateB = new Date(typeof b === 'string' ? b : b.date);
-        return dateB - dateA; 
-    });
-    if (task.history.length > 0) {
-      const newest = task.history[0];
-      task.lastCompleted = typeof newest === 'string' ? newest : newest.date;
-    }
-    setTanks(newTanks);
+    setTanks(prevTanks => prevTanks.map(tank => {
+        if (tank.id !== tankId) return tank;
+
+        const newTasks = tank.tasks.map((task, idx) => {
+            if (idx !== taskIndex) return task;
+
+            const [year, month, day] = newDateString.split('-').map(Number);
+            const fixedDate = new Date(year, month - 1, day);
+            const newIsoString = fixedDate.toISOString();
+
+            const newHistory = [...task.history];
+            const entry = newHistory[historyIndex];
+            
+            // Update the specific entry
+            if (typeof entry === 'object') {
+                newHistory[historyIndex] = { ...entry, date: newIsoString };
+            } else {
+                newHistory[historyIndex] = newIsoString;
+            }
+
+            // Re-sort
+            newHistory.sort((a, b) => {
+                const dateA = new Date(typeof a === 'string' ? a : a.date);
+                const dateB = new Date(typeof b === 'string' ? b : b.date);
+                return dateB - dateA; 
+            });
+
+            // Re-calculate latest
+            let newLastCompleted = null;
+            if(newHistory.length > 0) {
+                const newest = newHistory[0];
+                newLastCompleted = typeof newest === 'string' ? newest : newest.date;
+            }
+
+            return {
+                ...task,
+                lastCompleted: newLastCompleted,
+                history: newHistory
+            };
+        });
+
+        return { ...tank, tasks: newTasks };
+    }));
   };
 
   const handleAddNote = (tankId, text) => {
     if (!text.trim()) return;
-    const newTanks = [...tanks];
-    const tank = newTanks.find(t => t.id === tankId);
-    if (!tank.notes) tank.notes = [];
-    const newNote = { id: Date.now(), date: new Date().toISOString(), text: text };
-    tank.notes.unshift(newNote); 
-    setTanks(newTanks);
+    
+    setTanks(prevTanks => prevTanks.map(tank => {
+        if (tank.id !== tankId) return tank;
+
+        const newNote = { id: Date.now(), date: new Date().toISOString(), text: text };
+        // Create NEW notes array
+        return {
+            ...tank,
+            notes: [newNote, ...tank.notes]
+        };
+    }));
   };
 
   const handleDeleteNote = (tankId, noteId) => {
     if(!window.confirm("Delete this note?")) return;
-    const newTanks = [...tanks];
-    const tank = newTanks.find(t => t.id === tankId);
-    tank.notes = tank.notes.filter(n => n.id !== noteId);
-    setTanks(newTanks);
+
+    setTanks(prevTanks => prevTanks.map(tank => {
+        if (tank.id !== tankId) return tank;
+
+        return {
+            ...tank,
+            notes: tank.notes.filter(n => n.id !== noteId)
+        };
+    }));
   };
 
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
       setCategories(DEFAULT_CATEGORIES);
-      localStorage.removeItem('aquariumDataV41');
+      localStorage.removeItem('aquariumDataV43');
       localStorage.removeItem('aquariumCategoriesV2');
     }
   };
@@ -693,7 +753,8 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                                          {!isEditing && (
                                             <div style={{display:'flex', gap:'0.5rem'}}>
                                                 <button onClick={() => startEditing(tank.id, index, hIndex, dateStr)} style={{border:'none', background:'none', color:'#3b82f6', cursor:'pointer'}}><Pencil size={14}/></button>
-                                                <button onClick={() => handleDeleteHistory(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>
+                                                {/* FIXED: CORRECT FUNCTION NAME onDeleteHistory */}
+                                                <button onClick={() => onDeleteHistory(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>
                                             </div>
                                          )}
                                        </li>
