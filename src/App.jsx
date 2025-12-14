@@ -5,7 +5,7 @@ import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Down
 import SwipeView from './SwipeView';
 import './App.css';
 
-// --- FULL DATA CONFIGURATION (Restored) ---
+// --- FULL DATA CONFIGURATION (Restored V23) ---
 const INITIAL_DATA = [
   {
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
@@ -171,24 +171,18 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    // If adding a new category, use the text input value
     let finalCategory = formData.category;
     if (isNewCategoryMode) {
-        // Sanitize: lowercase, no spaces for ID consistency
         const safeId = newCategoryName.trim().toLowerCase().replace(/\s+/g, '-');
         if(!safeId) return alert("Please enter a category name");
         finalCategory = safeId;
     }
-
     onSave({ ...formData, category: finalCategory }, isNewCategoryMode ? newCategoryName : null);
     onClose();
   };
 
   const handleDeleteClick = () => {
-    if (itemToEdit) {
-        onDelete(itemToEdit.id);
-    }
+    if (itemToEdit) onDelete(itemToEdit.id);
   };
 
   const modalTitle = itemToEdit ? "Edit Item" : "Add New Item";
@@ -201,9 +195,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
           <h2>{modalTitle}</h2>
           <button onClick={onClose} className="btn-close"><X size={20}/></button>
         </div>
-        
         <form onSubmit={handleSubmit}>
-          {/* IMAGE UPLOAD */}
           <div style={{marginBottom:'1.5rem', display:'flex', flexDirection:'column', alignItems:'center'}}>
              <div 
                style={{
@@ -226,7 +218,6 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
              <input type="file" ref={fileInputRef} style={{display:'none'}} accept="image/*" onChange={handleImageUpload} />
           </div>
 
-          {/* CATEGORY SELECTION */}
           <div className="form-group">
             <label className="form-label">Category</label>
             {!isNewCategoryMode ? (
@@ -257,17 +248,14 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
             <label className="form-label">Name</label>
             <input name="name" placeholder="e.g. Quarantine Tank" value={formData.name} onChange={handleChange} className="form-input" required />
           </div>
-
           <div className="form-group">
             <label className="form-label">Type</label>
             <input name="type" placeholder="e.g. Freshwater" value={formData.type} onChange={handleChange} className="form-input" required />
           </div>
-
           <div className="form-group">
             <label className="form-label">Size</label>
             <input name="size" placeholder="e.g. 10 Gallon" value={formData.size} onChange={handleChange} className="form-input" required />
           </div>
-
           <div className="form-group">
             <label className="form-label">Task Frequency (Days)</label>
             <input type="number" name="frequency" value={formData.frequency} onChange={handleChange} className="form-input" min="1" required />
@@ -288,12 +276,11 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // UPDATED to V22 to restore lost data
-    const saved = localStorage.getItem('aquariumDataV22'); 
+    // V23 to restore full data
+    const saved = localStorage.getItem('aquariumDataV23'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
-  // NEW: State for custom categories
   const [categories, setCategories] = useState(() => {
     const saved = localStorage.getItem('aquariumCategoriesV2');
     return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
@@ -305,7 +292,7 @@ function App() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV22', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV23', JSON.stringify(tanks));
   }, [tanks]);
 
   useEffect(() => {
@@ -323,7 +310,6 @@ function App() {
   };
 
   const handleSaveItem = (formData, newCategoryLabel) => {
-    // 1. If a new category was created, add it to the list
     if (newCategoryLabel) {
         if (!categories.includes(formData.category)) {
             setCategories(prev => [...prev, formData.category]);
@@ -442,7 +428,7 @@ function App() {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
       setCategories(DEFAULT_CATEGORIES);
-      localStorage.removeItem('aquariumDataV22');
+      localStorage.removeItem('aquariumDataV23');
       localStorage.removeItem('aquariumCategoriesV2');
     }
   };
@@ -470,7 +456,6 @@ function App() {
       try {
         const importedData = JSON.parse(e.target.result);
         if (window.confirm("This will overwrite your current data with the backup. Continue?")) {
-            // Handle both new backup format (object) and old format (array)
             if (Array.isArray(importedData)) {
                 setTanks(importedData);
             } else if (importedData.tanks && importedData.categories) {
@@ -509,22 +494,18 @@ function App() {
           <nav className="sidebar-nav">
             <Link to="/" onClick={() => setSidebarOpen(false)} className="nav-link">Dashboard (Overview)</Link>
             <div className="section-label">Swipe Lists</div>
-            
-            {/* DYNAMIC CATEGORY LIST */}
             {categories.map(cat => {
                 let label = cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
                 if (cat === 'home') label = 'Home Aquariums';
                 if (cat === 'hermit') label = "Jackson's Hermit Crabs";
                 if (cat === 'meemaw') label = "Meemaw's Tank";
                 if (cat === 'rodi') label = "RODI";
-                
                 return (
                     <Link key={cat} to={`/swipe/${cat}`} onClick={() => setSidebarOpen(false)} className="nav-link">
                         {label}
                     </Link>
                 );
             })}
-
             <div className="section-label">Data Settings</div>
             <button onClick={backupData} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
               <Download size={18} /> Backup Data

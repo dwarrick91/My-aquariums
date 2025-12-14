@@ -261,7 +261,7 @@
 }
 .btn-reset:hover { color: #ef4444; }
 
-/* --- NOTES SECTION (RESTORED) --- */
+/* --- NOTES SECTION --- */
 .notes-section {
   margin-top: 1.5rem;
   border-top: 1px dashed #cbd5e1;
@@ -343,7 +343,7 @@
   color: #ef4444;
 }
 
-/* --- FAB BUTTON (RESTORED) --- */
+/* --- FAB BUTTON --- */
 .fab-add {
   position: fixed;
   bottom: 2rem;
@@ -368,7 +368,7 @@
   background-color: #1d4ed8;
 }
 
-/* --- MODAL STYLES (RESTORED) --- */
+/* --- MODAL STYLES --- */
 .modal-overlay {
   position: fixed;
   inset: 0;
