@@ -5,7 +5,7 @@ import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Down
 import SwipeView from './SwipeView';
 import './App.css';
 
-// --- DATA CONFIGURATION ---
+// --- FULL DATA CONFIGURATION (Restored) ---
 const INITIAL_DATA = [
   {
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
@@ -60,15 +60,59 @@ const INITIAL_DATA = [
     tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
+    id: 702, name: "Aloe", category: "plants", type: "Succulent", size: "Pot",
+    image: null,
+    notes: [],
+    tasks: [{ name: "Watering", frequency: 14, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 703, name: "Bedroom Plants", category: "plants", type: "Houseplant", size: "Pot",
+    image: null,
+    notes: [],
+    tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
+  },
+  {
     id: 801, name: "Filter 1", category: "rodi", type: "Sediment", size: "Stage 1",
+    image: null,
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 802, name: "Filter 2", category: "rodi", type: "Carbon Block", size: "Stage 2",
+    image: null,
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 803, name: "Filter 3", category: "rodi", type: "Carbon Block", size: "Stage 3",
+    image: null,
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 804, name: "Filter 4", category: "rodi", type: "RO Membrane", size: "Stage 4",
+    image: null,
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 730, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 805, name: "Filter 5", category: "rodi", type: "Deionization", size: "Stage 5",
+    image: null,
+    notes: [],
+    tasks: [{ name: "Replace Filter", frequency: 90, lastCompleted: null, history: [] }]
+  },
+  {
+    id: 806, name: "Filter 6", category: "rodi", type: "Polishing", size: "Stage 6",
     image: null,
     notes: [],
     tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
   }
 ];
 
+const DEFAULT_CATEGORIES = ['home', 'hermit', 'plants', 'meemaw', 'rodi'];
+
 // --- UNIVERSAL ITEM MODAL ---
-const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
+const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCategories }) => {
   const defaultState = {
     name: '',
     category: 'home',
@@ -79,10 +123,14 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
   };
 
   const [formData, setFormData] = useState(defaultState);
+  const [isNewCategoryMode, setIsNewCategoryMode] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
+      setIsNewCategoryMode(false);
+      setNewCategoryName("");
       if (itemToEdit) {
         setFormData({
           name: itemToEdit.name,
@@ -102,7 +150,12 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'category' && value === 'NEW_CATEGORY_OPTION') {
+        setIsNewCategoryMode(true);
+        setFormData(prev => ({ ...prev, category: '' }));
+    } else {
+        setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleImageUpload = (e) => {
@@ -118,7 +171,17 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    
+    // If adding a new category, use the text input value
+    let finalCategory = formData.category;
+    if (isNewCategoryMode) {
+        // Sanitize: lowercase, no spaces for ID consistency
+        const safeId = newCategoryName.trim().toLowerCase().replace(/\s+/g, '-');
+        if(!safeId) return alert("Please enter a category name");
+        finalCategory = safeId;
+    }
+
+    onSave({ ...formData, category: finalCategory }, isNewCategoryMode ? newCategoryName : null);
     onClose();
   };
 
@@ -128,9 +191,6 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
     }
   };
 
-  const isPlant = formData.category === 'plants';
-  const sizeLabel = isPlant ? "Size (e.g. Small Pot)" : "Size (e.g. 90 Gallon)";
-  const typeLabel = isPlant ? "Type (e.g. Succulent)" : "Type (e.g. Saltwater)";
   const modalTitle = itemToEdit ? "Edit Item" : "Add New Item";
   const buttonText = itemToEdit ? "Save Changes" : "Create";
 
@@ -163,42 +223,49 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
                     </div>
                 )}
              </div>
-             <button type="button" onClick={() => fileInputRef.current.click()} style={{marginTop:'0.5rem', background:'none', border:'none', color:'#3b82f6', cursor:'pointer', fontSize:'0.9rem'}}>
-                {formData.image ? "Change Photo" : "Upload Photo"}
-             </button>
-             <input 
-               type="file" 
-               ref={fileInputRef} 
-               style={{display:'none'}} 
-               accept="image/*" 
-               onChange={handleImageUpload} 
-             />
+             <input type="file" ref={fileInputRef} style={{display:'none'}} accept="image/*" onChange={handleImageUpload} />
           </div>
 
+          {/* CATEGORY SELECTION */}
           <div className="form-group">
             <label className="form-label">Category</label>
-            <select name="category" value={formData.category} onChange={handleChange} className="form-select">
-              <option value="home">Home Aquarium</option>
-              <option value="plants">Plant</option>
-              <option value="meemaw">Meemaw's Tank</option>
-              <option value="hermit">Hermit Crab</option>
-              <option value="rodi">RODI Filter</option>
-            </select>
+            {!isNewCategoryMode ? (
+                <select name="category" value={formData.category} onChange={handleChange} className="form-select">
+                    {availableCategories.map(cat => (
+                        <option key={cat} value={cat}>
+                            {cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        </option>
+                    ))}
+                    <option value="NEW_CATEGORY_OPTION">+ Create New Category...</option>
+                </select>
+            ) : (
+                <div style={{display:'flex', gap:'0.5rem'}}>
+                    <input 
+                        autoFocus
+                        placeholder="Enter new category name..." 
+                        value={newCategoryName} 
+                        onChange={(e) => setNewCategoryName(e.target.value)} 
+                        className="form-input" 
+                        required
+                    />
+                    <button type="button" onClick={() => setIsNewCategoryMode(false)} className="btn-cancel" style={{padding:'0.75rem'}}>Cancel</button>
+                </div>
+            )}
           </div>
 
           <div className="form-group">
             <label className="form-label">Name</label>
-            <input name="name" placeholder="e.g. Living Room Tank" value={formData.name} onChange={handleChange} className="form-input" required />
+            <input name="name" placeholder="e.g. Quarantine Tank" value={formData.name} onChange={handleChange} className="form-input" required />
           </div>
 
           <div className="form-group">
-            <label className="form-label">{typeLabel}</label>
-            <input name="type" placeholder={isPlant ? "Houseplant" : "Freshwater"} value={formData.type} onChange={handleChange} className="form-input" required />
+            <label className="form-label">Type</label>
+            <input name="type" placeholder="e.g. Freshwater" value={formData.type} onChange={handleChange} className="form-input" required />
           </div>
 
           <div className="form-group">
-            <label className="form-label">{sizeLabel}</label>
-            <input name="size" placeholder={isPlant ? "Pot" : "75 Gallon"} value={formData.size} onChange={handleChange} className="form-input" required />
+            <label className="form-label">Size</label>
+            <input name="size" placeholder="e.g. 10 Gallon" value={formData.size} onChange={handleChange} className="form-input" required />
           </div>
 
           <div className="form-group">
@@ -221,8 +288,15 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    const saved = localStorage.getItem('aquariumDataV20'); 
+    // UPDATED to V22 to restore lost data
+    const saved = localStorage.getItem('aquariumDataV22'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
+  });
+
+  // NEW: State for custom categories
+  const [categories, setCategories] = useState(() => {
+    const saved = localStorage.getItem('aquariumCategoriesV2');
+    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
@@ -231,8 +305,12 @@ function App() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV20', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV22', JSON.stringify(tanks));
   }, [tanks]);
+
+  useEffect(() => {
+    localStorage.setItem('aquariumCategoriesV2', JSON.stringify(categories));
+  }, [categories]);
 
   const openAddModal = () => { setEditingItem(null); setModalOpen(true); };
   const openEditModal = (item) => { setEditingItem(item); setModalOpen(true); };
@@ -244,7 +322,14 @@ function App() {
     }
   };
 
-  const handleSaveItem = (formData) => {
+  const handleSaveItem = (formData, newCategoryLabel) => {
+    // 1. If a new category was created, add it to the list
+    if (newCategoryLabel) {
+        if (!categories.includes(formData.category)) {
+            setCategories(prev => [...prev, formData.category]);
+        }
+    }
+
     if (editingItem) {
       setTanks(prevTanks => prevTanks.map(tank => {
         if (tank.id === editingItem.id) {
@@ -356,12 +441,15 @@ function App() {
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV20');
+      setCategories(DEFAULT_CATEGORIES);
+      localStorage.removeItem('aquariumDataV22');
+      localStorage.removeItem('aquariumCategoriesV2');
     }
   };
 
   const backupData = () => {
-    const jsonString = JSON.stringify(tanks, null, 2);
+    const backupObj = { tanks, categories };
+    const jsonString = JSON.stringify(backupObj, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -381,16 +469,18 @@ function App() {
     reader.onload = (e) => {
       try {
         const importedData = JSON.parse(e.target.result);
-        if (Array.isArray(importedData)) {
-          if(window.confirm("This will overwrite your current data with the backup. Continue?")) {
-            setTanks(importedData);
+        if (window.confirm("This will overwrite your current data with the backup. Continue?")) {
+            // Handle both new backup format (object) and old format (array)
+            if (Array.isArray(importedData)) {
+                setTanks(importedData);
+            } else if (importedData.tanks && importedData.categories) {
+                setTanks(importedData.tanks);
+                setCategories(importedData.categories);
+            }
             alert("Data restored successfully!");
-          }
-        } else {
-          alert("Invalid file format.");
         }
       } catch (err) {
-        alert("Error reading file. Make sure it is a valid JSON backup.");
+        alert("Error reading file.");
       }
     };
     reader.readAsText(file);
@@ -406,7 +496,8 @@ function App() {
           onClose={() => setModalOpen(false)} 
           onSave={handleSaveItem}
           onDelete={handleDeleteItem}
-          itemToEdit={editingItem} 
+          itemToEdit={editingItem}
+          availableCategories={categories} 
         />
         <input type="file" ref={fileInputRef} style={{display: 'none'}} accept=".json" onChange={restoreData} />
 
@@ -418,11 +509,22 @@ function App() {
           <nav className="sidebar-nav">
             <Link to="/" onClick={() => setSidebarOpen(false)} className="nav-link">Dashboard (Overview)</Link>
             <div className="section-label">Swipe Lists</div>
-            <Link to="/swipe/home" onClick={() => setSidebarOpen(false)} className="nav-link">Home Aquariums</Link>
-            <Link to="/swipe/hermit" onClick={() => setSidebarOpen(false)} className="nav-link">Jackson's Hermit Crabs</Link>
-            <Link to="/swipe/plants" onClick={() => setSidebarOpen(false)} className="nav-link">Plants</Link>
-            <Link to="/swipe/meemaw" onClick={() => setSidebarOpen(false)} className="nav-link">Meemaw's Tank</Link>
-            <Link to="/swipe/rodi" onClick={() => setSidebarOpen(false)} className="nav-link">RODI</Link>
+            
+            {/* DYNAMIC CATEGORY LIST */}
+            {categories.map(cat => {
+                let label = cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                if (cat === 'home') label = 'Home Aquariums';
+                if (cat === 'hermit') label = "Jackson's Hermit Crabs";
+                if (cat === 'meemaw') label = "Meemaw's Tank";
+                if (cat === 'rodi') label = "RODI";
+                
+                return (
+                    <Link key={cat} to={`/swipe/${cat}`} onClick={() => setSidebarOpen(false)} className="nav-link">
+                        {label}
+                    </Link>
+                );
+            })}
+
             <div className="section-label">Data Settings</div>
             <button onClick={backupData} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
               <Download size={18} /> Backup Data
@@ -452,7 +554,6 @@ function App() {
   );
 }
 
-// Updated Wrapper to include onEditItem
 const SwipeWrapper = ({ tanks, onComplete, onAddNote, onDeleteNote, onDeleteHistory, onEditHistory, onEditItem }) => {
   const { category } = useParams();
   const filteredTanks = tanks.filter(t => t.category === category);
@@ -464,13 +565,12 @@ const SwipeWrapper = ({ tanks, onComplete, onAddNote, onDeleteNote, onDeleteHist
         onDeleteNote={onDeleteNote} 
         onDeleteHistory={onDeleteHistory}
         onEditHistory={onEditHistory}
-        onEditItem={onEditItem} // Pass this down
+        onEditItem={onEditItem}
         categoryName={category} 
     />
   );
 };
 
-// ... CleanDashboard Component (omitted for brevity, keep existing code) ...
 const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onAddNote, onDeleteNote, onEditItem, onReset }) => {
   const [expandedTankId, setExpandedTankId] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);

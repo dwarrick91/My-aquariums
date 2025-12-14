@@ -1,23 +1,32 @@
 import React, { useState } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation } from 'swiper/modules';
-import { Droplets, Clock, Trash2, Pencil, Save, XCircle, X } from 'lucide-react';
+import { Droplets, Clock, Trash2, Pencil, Save, XCircle, X, MessageSquare, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
-export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHistory, onEditItem, categoryName }) {
+export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHistory, onEditItem, onAddNote, onDeleteNote, categoryName }) {
+  // State for toggling overlays
   const [historyOpenId, setHistoryOpenId] = useState(null);
+  const [notesOpenId, setNotesOpenId] = useState(null);
+  
+  // State for History Editing
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [editDateValue, setEditDateValue] = useState("");
 
-  let displayTitle = categoryName.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
-  if(categoryName === 'hermit') {
-    displayTitle = "Jackson's Hermit Crabs";
-  }
+  // State for Note Input
+  const [noteInput, setNoteInput] = useState("");
 
+  let displayTitle = categoryName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+  if(categoryName === 'hermit') displayTitle = "Jackson's Hermit Crabs";
+  if(categoryName === 'home') displayTitle = "Home Aquariums";
+  if(categoryName === 'meemaw') displayTitle = "Meemaw's Tank";
+  if(categoryName === 'rodi') displayTitle = "RODI";
+
+  // --- HANDLERS ---
   const startEditing = (uniqueId, currentDateStr) => {
     setEditingEntryId(uniqueId);
     const dateObj = new Date(currentDateStr);
@@ -34,8 +43,26 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
     setEditingEntryId(null);
   };
 
+  const submitNote = (tankId) => {
+    if (!noteInput.trim()) return;
+    onAddNote(tankId, noteInput);
+    setNoteInput("");
+  };
+
+  const toggleHistory = (id) => {
+    setHistoryOpenId(historyOpenId === id ? null : id);
+    setNotesOpenId(null); // Close notes if history opens
+  };
+
+  const toggleNotes = (id) => {
+    setNotesOpenId(notesOpenId === id ? null : id);
+    setHistoryOpenId(null); // Close history if notes opens
+    setNoteInput("");
+  };
+
   const containerStyle = {
     height: '100%',
+    width: '100%',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
@@ -56,7 +83,7 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
         {displayTitle}
       </h2>
       
-      <div style={{width:'100%', maxWidth:'450px', height:'600px'}}>
+      <div style={{width:'100%', maxWidth:'450px', height:'600px', margin: '0 auto'}}>
         <Swiper
           modules={[Pagination, Navigation]}
           spaceBetween={20}
@@ -77,6 +104,7 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
             const lastSide = latestHistory ? latestHistory.side : null;
             
             const isHistoryOpen = historyOpenId === tank.id;
+            const isNotesOpen = notesOpenId === tank.id;
 
             return (
               <SwiperSlide key={tank.id} style={{
@@ -93,8 +121,18 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                 
                 <div style={{marginTop:'-40px', textAlign:'center', padding:'0 1rem'}}>
                   
-                  {/* --- IMAGE / ICON --- */}
-                  <div style={{width:'80px', height:'80px', margin:'0 auto', background:'white', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2rem', boxShadow:'0 4px 6px rgba(0,0,0,0.1)', overflow:'hidden'}}>
+                  {/* --- IMAGE / ICON + EDIT BUTTON --- */}
+                  <div 
+                    onClick={() => onEditItem(tank)}
+                    style={{
+                        width:'80px', height:'80px', margin:'0 auto', 
+                        background:'white', borderRadius:'50%', 
+                        display:'flex', alignItems:'center', justifyContent:'center', 
+                        fontSize:'2rem', boxShadow:'0 4px 6px rgba(0,0,0,0.1)', 
+                        overflow:'hidden', cursor:'pointer', position:'relative'
+                    }}
+                    title="Tap to Edit Details"
+                  >
                     {tank.image ? (
                         <img src={tank.image} alt="" style={{width:'100%', height:'100%', objectFit:'cover'}} />
                     ) : (
@@ -102,22 +140,14 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                     )}
                   </div>
 
-                  {/* --- TITLE WITH EDIT BUTTON --- */}
-                  <div style={{display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', marginTop:'1rem', marginBottom:'0.5rem'}}>
-                    <h3 style={{fontSize:'1.5rem', fontWeight:'bold', color:'#1e293b', margin:0}}>{tank.name}</h3>
-                    <button 
-                        onClick={() => onEditItem(tank)}
-                        style={{border:'none', background:'none', color:'#94a3b8', cursor:'pointer'}}
-                    >
-                        <Pencil size={16} />
-                    </button>
-                  </div>
-                  
+                  {/* --- TITLE --- */}
+                  <h3 style={{fontSize:'1.5rem', fontWeight:'bold', color:'#1e293b', margin:'1rem 0 0.5rem 0'}}>{tank.name}</h3>
                   <span style={{color:'#64748b', fontSize:'0.875rem'}}>{tank.size} • {tank.type}</span>
                 </div>
 
                 <div style={{padding:'2rem', flex:1, display:'flex', flexDirection:'column'}}>
                   
+                  {/* --- SUMMARY BOX --- */}
                   <div style={{position:'relative', background:'#f8fafc', padding:'1rem', borderRadius:'0.75rem', border:'1px solid #e2e8f0', textAlign:'center', marginBottom:'auto'}}>
                     <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b', textTransform:'uppercase', margin:0}}>Last Water Change</p>
                     <p style={{fontSize:'1.25rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0 0'}}>
@@ -130,19 +160,29 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                           )
                         : 'Never'}
                     </p>
-                    {wcTask && (
+                    
+                    {/* --- TOGGLE ICONS (HISTORY & NOTES) --- */}
+                    <div style={{position:'absolute', top:'10px', right:'10px', display:'flex', gap:'8px'}}>
                         <button 
-                            onClick={() => setHistoryOpenId(isHistoryOpen ? null : tank.id)}
-                            style={{
-                                position:'absolute', top:'10px', right:'10px', 
-                                border:'none', background:'none', color:'#94a3b8', cursor:'pointer'
-                            }}
+                            onClick={() => toggleNotes(tank.id)}
+                            style={{border:'none', background:'none', color: isNotesOpen ? '#2563eb' : '#94a3b8', cursor:'pointer'}}
+                            title="View Notes"
                         >
-                            <Clock size={18} />
+                            <MessageSquare size={18} />
                         </button>
-                    )}
+                        {wcTask && (
+                            <button 
+                                onClick={() => toggleHistory(tank.id)}
+                                style={{border:'none', background:'none', color: isHistoryOpen ? '#2563eb' : '#94a3b8', cursor:'pointer'}}
+                                title="View History"
+                            >
+                                <Clock size={18} />
+                            </button>
+                        )}
+                    </div>
                   </div>
                   
+                  {/* --- ACTION BUTTONS --- */}
                   {wcTask && (
                     <div style={{marginTop:'2rem'}}>
                       {showSideButtons ? (
@@ -179,11 +219,9 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                   )}
                 </div>
 
+                {/* --- HISTORY OVERLAY --- */}
                 {isHistoryOpen && wcTask && (
-                    <div style={{
-                        position:'absolute', top:0, left:0, width:'100%', height:'100%', 
-                        background:'white', zIndex:20, display:'flex', flexDirection:'column'
-                    }}>
+                    <div style={{position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'white', zIndex:20, display:'flex', flexDirection:'column'}}>
                         <div style={{padding:'1rem', borderBottom:'1px solid #e2e8f0', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f8fafc'}}>
                             <span style={{fontWeight:'bold', color:'#334155'}}>History Log</span>
                             <button onClick={() => setHistoryOpenId(null)} style={{border:'none', background:'none', cursor:'pointer'}}><X size={20}/></button>
@@ -201,12 +239,7 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                                             <li key={hIndex} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0.75rem 0', borderBottom:'1px dashed #e2e8f0'}}>
                                                 {isEditing ? (
                                                     <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
-                                                        <input 
-                                                            type="date" 
-                                                            value={editDateValue}
-                                                            onChange={(e) => setEditDateValue(e.target.value)}
-                                                            style={{border:'1px solid #cbd5e1', borderRadius:'4px', padding:'2px', fontSize:'0.85rem'}}
-                                                        />
+                                                        <input type="date" value={editDateValue} onChange={(e) => setEditDateValue(e.target.value)} style={{border:'1px solid #cbd5e1', borderRadius:'4px', padding:'2px', fontSize:'0.85rem'}} />
                                                         <button onClick={() => saveEdit(tank.id, wcTaskIndex, hIndex)} style={{border:'none', background:'none', color:'#22c55e', cursor:'pointer'}}><Save size={16}/></button>
                                                         <button onClick={() => setEditingEntryId(null)} style={{border:'none', background:'none', color:'#94a3b8', cursor:'pointer'}}><XCircle size={16}/></button>
                                                     </div>
@@ -216,21 +249,10 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                                                         {side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'#f1f5f9', borderRadius:'4px', fontSize:'0.75rem'}}>{side}</span>}
                                                     </div>
                                                 )}
-
                                                 {!isEditing && (
                                                     <div style={{display:'flex', gap:'0.5rem'}}>
-                                                        <button 
-                                                            onClick={() => startEditing(uniqueId, dateStr)} 
-                                                            style={{border:'none', background:'none', color:'#3b82f6', cursor:'pointer'}}
-                                                        >
-                                                            <Pencil size={14}/>
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => onDeleteHistory(tank.id, wcTaskIndex, hIndex)} 
-                                                            style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}
-                                                        >
-                                                            <Trash2 size={14}/>
-                                                        </button>
+                                                        <button onClick={() => startEditing(uniqueId, dateStr)} style={{border:'none', background:'none', color:'#3b82f6', cursor:'pointer'}}><Pencil size={14}/></button>
+                                                        <button onClick={() => onDeleteHistory(tank.id, wcTaskIndex, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>
                                                     </div>
                                                 )}
                                             </li>
@@ -241,6 +263,51 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                         </div>
                     </div>
                 )}
+
+                {/* --- NOTES OVERLAY --- */}
+                {isNotesOpen && (
+                    <div style={{position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'white', zIndex:20, display:'flex', flexDirection:'column'}}>
+                        <div style={{padding:'1rem', borderBottom:'1px solid #e2e8f0', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f8fafc'}}>
+                            <span style={{fontWeight:'bold', color:'#334155'}}>Notes</span>
+                            <button onClick={() => setNotesOpenId(null)} style={{border:'none', background:'none', cursor:'pointer'}}><X size={20}/></button>
+                        </div>
+                        
+                        <div style={{flex:1, overflowY:'auto', padding:'1rem'}}>
+                            {tank.notes && tank.notes.length > 0 ? (
+                                <ul style={{listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:'0.75rem'}}>
+                                    {tank.notes.map((note) => (
+                                        <li key={note.id} style={{background:'#f8fafc', padding:'0.75rem', borderRadius:'0.5rem', border:'1px solid #e2e8f0', display:'flex', justifyContent:'space-between', alignItems:'flex-start'}}>
+                                            <div style={{display:'flex', flexDirection:'column'}}>
+                                                <span style={{fontSize:'0.7rem', color:'#94a3b8', marginBottom:'0.25rem'}}>{format(new Date(note.date), 'MMM d, h:mm a')}</span>
+                                                <span style={{color:'#334155', fontSize:'0.9rem'}}>{note.text}</span>
+                                            </div>
+                                            <button onClick={() => onDeleteNote(tank.id, note.id)} style={{border:'none', background:'none', color:'#cbd5e1', cursor:'pointer'}}><Trash2 size={14} /></button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : <p style={{textAlign:'center', color:'#cbd5e1', fontStyle:'italic'}}>No notes yet.</p>}
+                        </div>
+
+                        {/* INPUT AREA */}
+                        <div style={{padding:'1rem', borderTop:'1px solid #e2e8f0', display:'flex', gap:'0.5rem', background:'#f8fafc'}}>
+                            <input 
+                                type="text" 
+                                value={noteInput}
+                                onChange={(e) => setNoteInput(e.target.value)}
+                                placeholder="Add a note..."
+                                style={{flex:1, padding:'0.75rem', border:'1px solid #cbd5e1', borderRadius:'0.5rem', outline:'none'}}
+                                onKeyDown={(e) => e.key === 'Enter' && submitNote(tank.id)}
+                            />
+                            <button 
+                                onClick={() => submitNote(tank.id)}
+                                style={{background:'#2563eb', color:'white', border:'none', borderRadius:'0.5rem', width:'44px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer'}}
+                            >
+                                <Plus size={20} />
+                            </button>
+                        </div>
+                    </div>
+                )}
+
               </SwiperSlide>
             );
           })}
