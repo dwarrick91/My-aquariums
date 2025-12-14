@@ -9,15 +9,10 @@ import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
 export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHistory, onEditItem, onAddNote, onDeleteNote, categoryName }) {
-  // State for toggling overlays
   const [historyOpenId, setHistoryOpenId] = useState(null);
   const [notesOpenId, setNotesOpenId] = useState(null);
-  
-  // State for History Editing
   const [editingEntryId, setEditingEntryId] = useState(null);
   const [editDateValue, setEditDateValue] = useState("");
-
-  // State for Note Input
   const [noteInput, setNoteInput] = useState("");
 
   let displayTitle = categoryName.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -26,7 +21,6 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
   if(categoryName === 'meemaw') displayTitle = "Meemaw's Tank";
   if(categoryName === 'rodi') displayTitle = "RODI";
 
-  // --- HANDLERS ---
   const startEditing = (uniqueId, currentDateStr) => {
     setEditingEntryId(uniqueId);
     const dateObj = new Date(currentDateStr);
@@ -37,9 +31,7 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
   };
 
   const saveEdit = (tankId, taskIndex, histIndex) => {
-    if (editDateValue) {
-        onEditHistory(tankId, taskIndex, histIndex, editDateValue);
-    }
+    if (editDateValue) onEditHistory(tankId, taskIndex, histIndex, editDateValue);
     setEditingEntryId(null);
   };
 
@@ -51,12 +43,12 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
 
   const toggleHistory = (id) => {
     setHistoryOpenId(historyOpenId === id ? null : id);
-    setNotesOpenId(null); // Close notes if history opens
+    setNotesOpenId(null);
   };
 
   const toggleNotes = (id) => {
     setNotesOpenId(notesOpenId === id ? null : id);
-    setHistoryOpenId(null); // Close history if notes opens
+    setHistoryOpenId(null);
     setNoteInput("");
   };
 
@@ -93,14 +85,21 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
           style={{height:'100%', paddingBottom:'40px'}}
         >
           {tanks.map((tank) => {
-            const wcTaskIndex = tank.tasks.findIndex(t => t.name.toLowerCase().includes("water change"));
-            const wcTask = wcTaskIndex >= 0 ? tank.tasks[wcTaskIndex] : null;
+            // --- UPDATED TASK LOGIC ---
+            // Find the "Primary" task (Water Change, Watering, Replace Filter, etc)
+            const taskKeywords = ["water change", "watering", "replace", "mist"];
+            let primaryTaskIndex = tank.tasks.findIndex(t => taskKeywords.some(k => t.name.toLowerCase().includes(k)));
+            // Fallback to first task if no specific keyword matches
+            if (primaryTaskIndex === -1 && tank.tasks.length > 0) primaryTaskIndex = 0;
+            
+            const primaryTask = primaryTaskIndex >= 0 ? tank.tasks[primaryTaskIndex] : null;
 
             const isLargeTank = parseInt(tank.size) > 29;
             const isTerrarium = tank.type === "Terrarium";
-            const showSideButtons = isLargeTank && !isTerrarium;
+            // Check if "Left/Right" split is actually needed
+            const showSideButtons = isLargeTank && !isTerrarium && primaryTask && primaryTask.name.toLowerCase().includes("water change");
 
-            const latestHistory = wcTask && wcTask.history && wcTask.history.length > 0 ? wcTask.history[0] : null;
+            const latestHistory = primaryTask && primaryTask.history && primaryTask.history.length > 0 ? primaryTask.history[0] : null;
             const lastSide = latestHistory ? latestHistory.side : null;
             
             const isHistoryOpen = historyOpenId === tank.id;
@@ -121,7 +120,6 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                 
                 <div style={{marginTop:'-40px', textAlign:'center', padding:'0 1rem'}}>
                   
-                  {/* --- IMAGE / ICON + EDIT BUTTON --- */}
                   <div 
                     onClick={() => onEditItem(tank)}
                     style={{
@@ -140,107 +138,77 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                     )}
                   </div>
 
-                  {/* --- TITLE --- */}
                   <h3 style={{fontSize:'1.5rem', fontWeight:'bold', color:'#1e293b', margin:'1rem 0 0.5rem 0'}}>{tank.name}</h3>
                   <span style={{color:'#64748b', fontSize:'0.875rem'}}>{tank.size} • {tank.type}</span>
                 </div>
 
                 <div style={{padding:'2rem', flex:1, display:'flex', flexDirection:'column'}}>
                   
-                  {/* --- SUMMARY BOX --- */}
                   <div style={{position:'relative', background:'#f8fafc', padding:'1rem', borderRadius:'0.75rem', border:'1px solid #e2e8f0', textAlign:'center', marginBottom:'auto'}}>
-                    <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b', textTransform:'uppercase', margin:0}}>Last Water Change</p>
+                    <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b', textTransform:'uppercase', margin:0}}>
+                        {primaryTask ? `Last ${primaryTask.name}` : "Last Maintenance"}
+                    </p>
                     <p style={{fontSize:'1.25rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0 0'}}>
-                      {wcTask && wcTask.lastCompleted 
+                      {primaryTask && primaryTask.lastCompleted 
                         ? (
                             <span>
-                              {new Date(wcTask.lastCompleted).toLocaleDateString()}
+                              {new Date(primaryTask.lastCompleted).toLocaleDateString()}
                               {lastSide && <span style={{marginLeft:'8px', color:'#64748b', fontWeight:'normal'}}>({lastSide})</span>}
                             </span>
                           )
                         : 'Never'}
                     </p>
                     
-                    {/* --- TOGGLE ICONS (HISTORY & NOTES) --- */}
                     <div style={{position:'absolute', top:'10px', right:'10px', display:'flex', gap:'8px'}}>
-                        <button 
-                            onClick={() => toggleNotes(tank.id)}
-                            style={{border:'none', background:'none', color: isNotesOpen ? '#2563eb' : '#94a3b8', cursor:'pointer'}}
-                            title="View Notes"
-                        >
-                            <MessageSquare size={18} />
-                        </button>
-                        {wcTask && (
-                            <button 
-                                onClick={() => toggleHistory(tank.id)}
-                                style={{border:'none', background:'none', color: isHistoryOpen ? '#2563eb' : '#94a3b8', cursor:'pointer'}}
-                                title="View History"
-                            >
-                                <Clock size={18} />
-                            </button>
+                        <button onClick={() => toggleNotes(tank.id)} style={{border:'none', background:'none', color: isNotesOpen ? '#2563eb' : '#94a3b8', cursor:'pointer'}}><MessageSquare size={18} /></button>
+                        {primaryTask && (
+                            <button onClick={() => toggleHistory(tank.id)} style={{border:'none', background:'none', color: isHistoryOpen ? '#2563eb' : '#94a3b8', cursor:'pointer'}}><Clock size={18} /></button>
                         )}
                     </div>
                   </div>
                   
-                  {/* --- ACTION BUTTONS --- */}
-                  {wcTask && (
+                  {primaryTask && (
                     <div style={{marginTop:'2rem'}}>
                       {showSideButtons ? (
                         <div style={{display:'flex', gap:'1rem'}}>
-                          <button 
-                            onClick={() => onComplete(tank.id, wcTaskIndex, 'Left')}
-                            style={{
-                              flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'
-                            }}
-                          >
-                            Left
-                          </button>
-                          <button 
-                            onClick={() => onComplete(tank.id, wcTaskIndex, 'Right')}
-                            style={{
-                              flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'
-                            }}
-                          >
-                            Right
-                          </button>
+                          <button onClick={() => onComplete(tank.id, primaryTaskIndex, 'Left')} style={{flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'}}>Left</button>
+                          <button onClick={() => onComplete(tank.id, primaryTaskIndex, 'Right')} style={{flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'}}>Right</button>
                         </div>
                       ) : (
                         <button 
-                          onClick={() => onComplete(tank.id, wcTaskIndex, null)}
+                          onClick={() => onComplete(tank.id, primaryTaskIndex, null)}
                           style={{
                             width:'100%', padding:'1rem', background:'#2563eb', color:'white', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', boxShadow:'0 4px 6px rgba(37, 99, 235, 0.2)'
                           }}
                         >
                           <Droplets size={20} />
-                          Log Water Change Today
+                          Log {primaryTask.name}
                         </button>
                       )}
                     </div>
                   )}
                 </div>
 
-                {/* --- HISTORY OVERLAY --- */}
-                {isHistoryOpen && wcTask && (
+                {isHistoryOpen && primaryTask && (
                     <div style={{position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'white', zIndex:20, display:'flex', flexDirection:'column'}}>
                         <div style={{padding:'1rem', borderBottom:'1px solid #e2e8f0', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f8fafc'}}>
                             <span style={{fontWeight:'bold', color:'#334155'}}>History Log</span>
                             <button onClick={() => setHistoryOpenId(null)} style={{border:'none', background:'none', cursor:'pointer'}}><X size={20}/></button>
                         </div>
                         <div style={{flex:1, overflowY:'auto', padding:'1rem'}}>
-                            {wcTask.history && wcTask.history.length > 0 ? (
+                            {primaryTask.history && primaryTask.history.length > 0 ? (
                                 <ul style={{listStyle:'none', padding:0, margin:0}}>
-                                    {wcTask.history.map((entry, hIndex) => {
+                                    {primaryTask.history.map((entry, hIndex) => {
                                         const dateStr = typeof entry === 'string' ? entry : entry.date;
                                         const side = typeof entry === 'object' ? entry.side : null;
-                                        const uniqueId = `${tank.id}-${wcTaskIndex}-${hIndex}`;
+                                        const uniqueId = `${tank.id}-${primaryTaskIndex}-${hIndex}`;
                                         const isEditing = editingEntryId === uniqueId;
-
                                         return (
                                             <li key={hIndex} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0.75rem 0', borderBottom:'1px dashed #e2e8f0'}}>
                                                 {isEditing ? (
                                                     <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
                                                         <input type="date" value={editDateValue} onChange={(e) => setEditDateValue(e.target.value)} style={{border:'1px solid #cbd5e1', borderRadius:'4px', padding:'2px', fontSize:'0.85rem'}} />
-                                                        <button onClick={() => saveEdit(tank.id, wcTaskIndex, hIndex)} style={{border:'none', background:'none', color:'#22c55e', cursor:'pointer'}}><Save size={16}/></button>
+                                                        <button onClick={() => saveEdit(tank.id, primaryTaskIndex, hIndex)} style={{border:'none', background:'none', color:'#22c55e', cursor:'pointer'}}><Save size={16}/></button>
                                                         <button onClick={() => setEditingEntryId(null)} style={{border:'none', background:'none', color:'#94a3b8', cursor:'pointer'}}><XCircle size={16}/></button>
                                                     </div>
                                                 ) : (
@@ -252,7 +220,7 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                                                 {!isEditing && (
                                                     <div style={{display:'flex', gap:'0.5rem'}}>
                                                         <button onClick={() => startEditing(uniqueId, dateStr)} style={{border:'none', background:'none', color:'#3b82f6', cursor:'pointer'}}><Pencil size={14}/></button>
-                                                        <button onClick={() => onDeleteHistory(tank.id, wcTaskIndex, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>
+                                                        <button onClick={() => onDeleteHistory(tank.id, primaryTaskIndex, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>
                                                     </div>
                                                 )}
                                             </li>
@@ -264,14 +232,12 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                     </div>
                 )}
 
-                {/* --- NOTES OVERLAY --- */}
                 {isNotesOpen && (
                     <div style={{position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'white', zIndex:20, display:'flex', flexDirection:'column'}}>
                         <div style={{padding:'1rem', borderBottom:'1px solid #e2e8f0', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f8fafc'}}>
                             <span style={{fontWeight:'bold', color:'#334155'}}>Notes</span>
                             <button onClick={() => setNotesOpenId(null)} style={{border:'none', background:'none', cursor:'pointer'}}><X size={20}/></button>
                         </div>
-                        
                         <div style={{flex:1, overflowY:'auto', padding:'1rem'}}>
                             {tank.notes && tank.notes.length > 0 ? (
                                 <ul style={{listStyle:'none', padding:0, margin:0, display:'flex', flexDirection:'column', gap:'0.75rem'}}>
@@ -287,27 +253,12 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                                 </ul>
                             ) : <p style={{textAlign:'center', color:'#cbd5e1', fontStyle:'italic'}}>No notes yet.</p>}
                         </div>
-
-                        {/* INPUT AREA */}
                         <div style={{padding:'1rem', borderTop:'1px solid #e2e8f0', display:'flex', gap:'0.5rem', background:'#f8fafc'}}>
-                            <input 
-                                type="text" 
-                                value={noteInput}
-                                onChange={(e) => setNoteInput(e.target.value)}
-                                placeholder="Add a note..."
-                                style={{flex:1, padding:'0.75rem', border:'1px solid #cbd5e1', borderRadius:'0.5rem', outline:'none'}}
-                                onKeyDown={(e) => e.key === 'Enter' && submitNote(tank.id)}
-                            />
-                            <button 
-                                onClick={() => submitNote(tank.id)}
-                                style={{background:'#2563eb', color:'white', border:'none', borderRadius:'0.5rem', width:'44px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer'}}
-                            >
-                                <Plus size={20} />
-                            </button>
+                            <input type="text" value={noteInput} onChange={(e) => setNoteInput(e.target.value)} placeholder="Add a note..." style={{flex:1, padding:'0.75rem', border:'1px solid #cbd5e1', borderRadius:'0.5rem', outline:'none'}} onKeyDown={(e) => e.key === 'Enter' && submitNote(tank.id)} />
+                            <button onClick={() => submitNote(tank.id)} style={{background:'#2563eb', color:'white', border:'none', borderRadius:'0.5rem', width:'44px', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer'}}><Plus size={20} /></button>
                         </div>
                     </div>
                 )}
-
               </SwiperSlide>
             );
           })}
