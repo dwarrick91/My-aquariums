@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
-import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, MessageSquare, Download, Upload, Pencil } from 'lucide-react';
+import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Download, Upload, Pencil, Save, XCircle, Image as ImageIcon } from 'lucide-react';
 import SwipeView from './SwipeView';
 import './App.css';
 
@@ -9,6 +9,7 @@ import './App.css';
 const INITIAL_DATA = [
   {
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
+    image: null,
     notes: [],
     tasks: [
       { name: "Water Change", frequency: 7, lastCompleted: null, history: [] },
@@ -17,6 +18,7 @@ const INITIAL_DATA = [
   },
   {
     id: 2, name: "Saltwater Reef", category: "home", type: "Saltwater", size: "29 Gallon",
+    image: null,
     notes: [],
     tasks: [
       { name: "Water Change", frequency: 7, lastCompleted: null, history: [] },
@@ -26,6 +28,7 @@ const INITIAL_DATA = [
   },
   {
     id: 3, name: "Community Tank", category: "home", type: "Freshwater", size: "50 Gallon",
+    image: null,
     notes: [],
     tasks: [
       { name: "Water Change", frequency: 7, lastCompleted: null, history: [] },
@@ -34,77 +37,49 @@ const INITIAL_DATA = [
   },
   {
     id: 4, name: "Betta Tank", category: "home", type: "Freshwater", size: "3 Gallon",
+    image: null,
     notes: [],
     tasks: [{ name: "Water Change", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
     id: 5, name: "Meemaw's Cichlids", category: "meemaw", type: "Cichlid", size: "65 Gallon",
+    image: null,
     notes: [],
     tasks: [{ name: "Water Change", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
     id: 6, name: "Jackson's Hermit Crabs", category: "hermit", type: "Terrarium", size: "55 Gallon",
+    image: null,
     notes: [],
     tasks: [{ name: "Water Change", frequency: 2, lastCompleted: null, history: [] }]
   },
   {
     id: 701, name: "Living Room Plants", category: "plants", type: "Houseplant", size: "Pot",
-    notes: [],
-    tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 702, name: "Aloe", category: "plants", type: "Succulent", size: "Pot",
-    notes: [],
-    tasks: [{ name: "Watering", frequency: 14, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 703, name: "Bedroom Plants", category: "plants", type: "Houseplant", size: "Pot",
+    image: null,
     notes: [],
     tasks: [{ name: "Watering", frequency: 7, lastCompleted: null, history: [] }]
   },
   {
     id: 801, name: "Filter 1", category: "rodi", type: "Sediment", size: "Stage 1",
-    notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 802, name: "Filter 2", category: "rodi", type: "Carbon Block", size: "Stage 2",
-    notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 803, name: "Filter 3", category: "rodi", type: "Carbon Block", size: "Stage 3",
-    notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 804, name: "Filter 4", category: "rodi", type: "RO Membrane", size: "Stage 4",
-    notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 730, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 805, name: "Filter 5", category: "rodi", type: "Deionization", size: "Stage 5",
-    notes: [],
-    tasks: [{ name: "Replace Filter", frequency: 90, lastCompleted: null, history: [] }]
-  },
-  {
-    id: 806, name: "Filter 6", category: "rodi", type: "Polishing", size: "Stage 6",
+    image: null,
     notes: [],
     tasks: [{ name: "Replace Filter", frequency: 180, lastCompleted: null, history: [] }]
   }
 ];
 
-// --- UNIVERSAL ITEM MODAL (Updated UI) ---
+// --- UNIVERSAL ITEM MODAL ---
 const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
   const defaultState = {
     name: '',
     category: 'home',
     type: '',
     size: '',
-    frequency: 7
+    frequency: 7,
+    image: null
   };
 
   const [formData, setFormData] = useState(defaultState);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -114,7 +89,8 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
           category: itemToEdit.category,
           type: itemToEdit.type,
           size: itemToEdit.size,
-          frequency: itemToEdit.tasks[0]?.frequency || 7
+          frequency: itemToEdit.tasks[0]?.frequency || 7,
+          image: itemToEdit.image || null
         });
       } else {
         setFormData(defaultState);
@@ -127,6 +103,17 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormData(prev => ({ ...prev, image: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = (e) => {
@@ -156,6 +143,38 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
         </div>
         
         <form onSubmit={handleSubmit}>
+          {/* IMAGE UPLOAD */}
+          <div style={{marginBottom:'1.5rem', display:'flex', flexDirection:'column', alignItems:'center'}}>
+             <div 
+               style={{
+                 width:'100px', height:'100px', borderRadius:'50%', 
+                 backgroundColor:'#f1f5f9', border:'2px dashed #cbd5e1',
+                 display:'flex', alignItems:'center', justifyContent:'center',
+                 overflow:'hidden', cursor:'pointer', position:'relative'
+               }}
+               onClick={() => fileInputRef.current.click()}
+             >
+                {formData.image ? (
+                    <img src={formData.image} alt="Preview" style={{width:'100%', height:'100%', objectFit:'cover'}} />
+                ) : (
+                    <div style={{textAlign:'center', color:'#94a3b8'}}>
+                        <ImageIcon size={24} style={{marginBottom:'4px'}}/>
+                        <div style={{fontSize:'0.7rem'}}>Add Photo</div>
+                    </div>
+                )}
+             </div>
+             <button type="button" onClick={() => fileInputRef.current.click()} style={{marginTop:'0.5rem', background:'none', border:'none', color:'#3b82f6', cursor:'pointer', fontSize:'0.9rem'}}>
+                {formData.image ? "Change Photo" : "Upload Photo"}
+             </button>
+             <input 
+               type="file" 
+               ref={fileInputRef} 
+               style={{display:'none'}} 
+               accept="image/*" 
+               onChange={handleImageUpload} 
+             />
+          </div>
+
           <div className="form-group">
             <label className="form-label">Category</label>
             <select name="category" value={formData.category} onChange={handleChange} className="form-select">
@@ -169,64 +188,28 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
 
           <div className="form-group">
             <label className="form-label">Name</label>
-            <input 
-              name="name" 
-              placeholder="e.g. Living Room Tank" 
-              value={formData.name} 
-              onChange={handleChange} 
-              className="form-input" 
-              required 
-            />
+            <input name="name" placeholder="e.g. Living Room Tank" value={formData.name} onChange={handleChange} className="form-input" required />
           </div>
 
           <div className="form-group">
             <label className="form-label">{typeLabel}</label>
-            <input 
-              name="type" 
-              placeholder={isPlant ? "Houseplant" : "Freshwater"} 
-              value={formData.type} 
-              onChange={handleChange} 
-              className="form-input" 
-              required 
-            />
+            <input name="type" placeholder={isPlant ? "Houseplant" : "Freshwater"} value={formData.type} onChange={handleChange} className="form-input" required />
           </div>
 
           <div className="form-group">
             <label className="form-label">{sizeLabel}</label>
-            <input 
-              name="size" 
-              placeholder={isPlant ? "Pot" : "75 Gallon"} 
-              value={formData.size} 
-              onChange={handleChange} 
-              className="form-input" 
-              required 
-            />
+            <input name="size" placeholder={isPlant ? "Pot" : "75 Gallon"} value={formData.size} onChange={handleChange} className="form-input" required />
           </div>
 
           <div className="form-group">
             <label className="form-label">Task Frequency (Days)</label>
-            <input 
-              type="number" 
-              name="frequency" 
-              value={formData.frequency} 
-              onChange={handleChange} 
-              className="form-input" 
-              min="1" 
-              required 
-            />
+            <input type="number" name="frequency" value={formData.frequency} onChange={handleChange} className="form-input" min="1" required />
           </div>
 
           <div className="modal-actions">
             {itemToEdit && (
-                <button 
-                    type="button" 
-                    onClick={handleDeleteClick} 
-                    className="btn-delete-modal"
-                >
-                    <Trash2 size={18} /> Delete
-                </button>
+                <button type="button" onClick={handleDeleteClick} className="btn-delete-modal"><Trash2 size={18} /> Delete</button>
             )}
-
             <button type="button" onClick={onClose} className="btn-cancel">Cancel</button>
             <button type="submit" className="btn-save">{buttonText}</button>
           </div>
@@ -238,37 +221,24 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit }) => {
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // V16 forces fresh data structure
-    const saved = localStorage.getItem('aquariumDataV16'); 
+    const saved = localStorage.getItem('aquariumDataV20'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
-  
-  // MODAL STATES
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null); 
-  
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV16', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV20', JSON.stringify(tanks));
   }, [tanks]);
 
-  // --- MODAL HANDLERS ---
-  const openAddModal = () => {
-    setEditingItem(null); 
-    setModalOpen(true);
-  };
+  const openAddModal = () => { setEditingItem(null); setModalOpen(true); };
+  const openEditModal = (item) => { setEditingItem(item); setModalOpen(true); };
 
-  const openEditModal = (item) => {
-    setEditingItem(item); 
-    setModalOpen(true);
-  };
-
-  // --- DATA LOGIC ---
   const handleDeleteItem = (id) => {
-    if(window.confirm("Are you sure you want to delete this tank/plant permanently?")) {
+    if(window.confirm("Are you sure you want to delete this item?")) {
         setTanks(prevTanks => prevTanks.filter(item => item.id !== id));
         setModalOpen(false); 
     }
@@ -288,6 +258,7 @@ function App() {
             category: formData.category,
             type: formData.type,
             size: formData.size,
+            image: formData.image, 
             tasks: updatedTasks
           };
         }
@@ -304,6 +275,7 @@ function App() {
         category: formData.category,
         type: formData.type,
         size: formData.size,
+        image: formData.image, 
         notes: [],
         tasks: [{ name: taskName, frequency: parseInt(formData.frequency), lastCompleted: null, history: [] }]
       };
@@ -316,13 +288,10 @@ function App() {
     const tank = newTanks.find(t => t.id === tankId);
     const task = tank.tasks[taskIndex];
     const now = new Date().toISOString();
-    
     const historyEntry = { date: now, side: side };
-    
     if (!task.history) task.history = [];
     task.history = [historyEntry, ...task.history];
     task.lastCompleted = now; 
-
     setTanks(newTanks);
   };
 
@@ -332,7 +301,6 @@ function App() {
     const tank = newTanks.find(t => t.id === tankId);
     const task = tank.tasks[taskIndex];
     task.history.splice(historyIndex, 1);
-    
     if (task.history.length > 0) {
       const newest = task.history[0];
       task.lastCompleted = typeof newest === 'string' ? newest : newest.date;
@@ -342,12 +310,36 @@ function App() {
     setTanks(newTanks);
   };
 
+  const handleEditHistory = (tankId, taskIndex, historyIndex, newDateString) => {
+    const newTanks = [...tanks];
+    const tank = newTanks.find(t => t.id === tankId);
+    const task = tank.tasks[taskIndex];
+    const [year, month, day] = newDateString.split('-').map(Number);
+    const fixedDate = new Date(year, month - 1, day);
+    const newIsoString = fixedDate.toISOString();
+    const entry = task.history[historyIndex];
+    if (typeof entry === 'object') {
+        entry.date = newIsoString;
+    } else {
+        task.history[historyIndex] = newIsoString;
+    }
+    task.history.sort((a, b) => {
+        const dateA = new Date(typeof a === 'string' ? a : a.date);
+        const dateB = new Date(typeof b === 'string' ? b : b.date);
+        return dateB - dateA; 
+    });
+    if (task.history.length > 0) {
+      const newest = task.history[0];
+      task.lastCompleted = typeof newest === 'string' ? newest : newest.date;
+    }
+    setTanks(newTanks);
+  };
+
   const handleAddNote = (tankId, text) => {
     if (!text.trim()) return;
     const newTanks = [...tanks];
     const tank = newTanks.find(t => t.id === tankId);
     if (!tank.notes) tank.notes = [];
-    
     const newNote = { id: Date.now(), date: new Date().toISOString(), text: text };
     tank.notes.unshift(newNote); 
     setTanks(newTanks);
@@ -364,11 +356,10 @@ function App() {
   const resetData = () => {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
-      localStorage.removeItem('aquariumDataV16');
+      localStorage.removeItem('aquariumDataV20');
     }
   };
 
-  // --- BACKUP & RESTORE ---
   const backupData = () => {
     const jsonString = JSON.stringify(tanks, null, 2);
     const blob = new Blob([jsonString], { type: "application/json" });
@@ -381,14 +372,11 @@ function App() {
     document.body.removeChild(link);
   };
 
-  const triggerFileUpload = () => {
-    fileInputRef.current.click();
-  };
+  const triggerFileUpload = () => { fileInputRef.current.click(); };
 
   const restoreData = (event) => {
     const file = event.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
@@ -413,8 +401,6 @@ function App() {
     <Router>
       <div className="app-container">
         {isSidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>}
-        
-        {/* REUSED ITEM MODAL */}
         <ItemModal 
           isOpen={isModalOpen} 
           onClose={() => setModalOpen(false)} 
@@ -422,14 +408,7 @@ function App() {
           onDelete={handleDeleteItem}
           itemToEdit={editingItem} 
         />
-
-        <input 
-          type="file" 
-          ref={fileInputRef} 
-          style={{display: 'none'}} 
-          accept=".json" 
-          onChange={restoreData} 
-        />
+        <input type="file" ref={fileInputRef} style={{display: 'none'}} accept=".json" onChange={restoreData} />
 
         <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
           <div className="sidebar-header">
@@ -444,7 +423,6 @@ function App() {
             <Link to="/swipe/plants" onClick={() => setSidebarOpen(false)} className="nav-link">Plants</Link>
             <Link to="/swipe/meemaw" onClick={() => setSidebarOpen(false)} className="nav-link">Meemaw's Tank</Link>
             <Link to="/swipe/rodi" onClick={() => setSidebarOpen(false)} className="nav-link">RODI</Link>
-
             <div className="section-label">Data Settings</div>
             <button onClick={backupData} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
               <Download size={18} /> Backup Data
@@ -457,77 +435,68 @@ function App() {
 
         <main className="main-content">
           <header className="mobile-header">
-            <button onClick={() => setSidebarOpen(true)} style={{background:'none', border:'none'}}>
-                <Menu size={24} color="#334155" />
-            </button>
+            <button onClick={() => setSidebarOpen(true)} style={{background:'none', border:'none'}}><Menu size={24} color="#334155" /></button>
             <h2>My Tanks</h2>
           </header>
-
           <div className="content-scroll-area">
             <Routes>
-              <Route path="/" element={
-                <CleanDashboard 
-                  tanks={tanks} 
-                  onComplete={handleComplete} 
-                  onDeleteHistory={handleDeleteHistory}
-                  onAddNote={handleAddNote}       
-                  onDeleteNote={handleDeleteNote}
-                  onEditItem={openEditModal}
-                  onReset={resetData} 
-                />
-              } />
-              <Route path="/swipe/:category" element={
-                <SwipeWrapper 
-                  tanks={tanks} 
-                  onComplete={handleComplete} 
-                  onAddNote={handleAddNote}      
-                  onDeleteNote={handleDeleteNote}
-                />
-              } />
+              <Route path="/" element={<CleanDashboard tanks={tanks} onComplete={handleComplete} onDeleteHistory={handleDeleteHistory} onEditHistory={handleEditHistory} onAddNote={handleAddNote} onDeleteNote={handleDeleteNote} onEditItem={openEditModal} onReset={resetData} />} />
+              <Route path="/swipe/:category" element={<SwipeWrapper tanks={tanks} onComplete={handleComplete} onAddNote={handleAddNote} onDeleteNote={handleDeleteNote} onDeleteHistory={handleDeleteHistory} onEditHistory={handleEditHistory} onEditItem={openEditModal} />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
-
-          <button className="fab-add" onClick={openAddModal}>
-            <Plus size={32} />
-          </button>
+          <button className="fab-add" onClick={openAddModal}><Plus size={32} /></button>
         </main>
       </div>
     </Router>
   );
 }
 
-const SwipeWrapper = ({ tanks, onComplete, onAddNote, onDeleteNote }) => {
+// Updated Wrapper to include onEditItem
+const SwipeWrapper = ({ tanks, onComplete, onAddNote, onDeleteNote, onDeleteHistory, onEditHistory, onEditItem }) => {
   const { category } = useParams();
   const filteredTanks = tanks.filter(t => t.category === category);
-  return <SwipeView tanks={filteredTanks} onComplete={onComplete} onAddNote={onAddNote} onDeleteNote={onDeleteNote} categoryName={category} />;
+  return (
+    <SwipeView 
+        tanks={filteredTanks} 
+        onComplete={onComplete} 
+        onAddNote={onAddNote} 
+        onDeleteNote={onDeleteNote} 
+        onDeleteHistory={onDeleteHistory}
+        onEditHistory={onEditHistory}
+        onEditItem={onEditItem} // Pass this down
+        categoryName={category} 
+    />
+  );
 };
 
-// --- DASHBOARD COMPONENT ---
-const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDeleteNote, onEditItem, onReset }) => {
+// ... CleanDashboard Component (omitted for brevity, keep existing code) ...
+const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onAddNote, onDeleteNote, onEditItem, onReset }) => {
   const [expandedTankId, setExpandedTankId] = useState(null);
   const [expandedTask, setExpandedTask] = useState(null);
   const [noteInput, setNoteInput] = useState("");
+  const [editingEntryId, setEditingEntryId] = useState(null); 
+  const [editDateValue, setEditDateValue] = useState("");
 
-  const toggleTank = (id) => {
-    setExpandedTankId(expandedTankId === id ? null : id);
-    setNoteInput("");
+  const toggleTank = (id) => { setExpandedTankId(expandedTankId === id ? null : id); setNoteInput(""); };
+  const toggleHistory = (e, uniqueKey) => { e.stopPropagation(); setExpandedTask(expandedTask === uniqueKey ? null : uniqueKey); setEditingEntryId(null); };
+  const handleEditClick = (e, tank) => { e.stopPropagation(); onEditItem(tank); };
+  
+  const startEditing = (tankId, taskIdx, histIdx, currentDateStr) => {
+    setEditingEntryId(`${tankId}-${taskIdx}-${histIdx}`);
+    const dateObj = new Date(currentDateStr);
+    const yyyy = dateObj.getFullYear();
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+    const dd = String(dateObj.getDate()).padStart(2, '0');
+    setEditDateValue(`${yyyy}-${mm}-${dd}`);
   };
 
-  const toggleHistory = (e, uniqueKey) => {
-    e.stopPropagation();
-    setExpandedTask(expandedTask === uniqueKey ? null : uniqueKey);
+  const saveEdit = (tankId, taskIdx, histIdx) => {
+    if (editDateValue) onEditHistory(tankId, taskIdx, histIdx, editDateValue);
+    setEditingEntryId(null);
   };
 
-  const handleEditClick = (e, tank) => {
-    e.stopPropagation();
-    onEditItem(tank);
-  };
-
-  const submitNote = (tankId) => {
-    onAddNote(tankId, noteInput);
-    setNoteInput("");
-  };
+  const submitNote = (tankId) => { onAddNote(tankId, noteInput); setNoteInput(""); };
 
   const totalOverdue = tanks.reduce((acc, tank) => {
     return acc + tank.tasks.filter(t => {
@@ -562,17 +531,18 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
               <button onClick={() => toggleTank(tank.id)} className="card-header">
                 <div className="header-content">
                   <div className="tank-info">
-                    <div className={`status-dot ${tankOverdueCount > 0 ? 'red' : 'green'}`} />
+                    {tank.image ? (
+                        <div style={{position:'relative', marginRight:'1rem'}}>
+                            <img src={tank.image} alt="" style={{width:'48px', height:'48px', borderRadius:'50%', objectFit:'cover', border:'1px solid #e2e8f0'}} />
+                            <div className={`status-dot ${tankOverdueCount > 0 ? 'red' : 'green'}`} style={{position:'absolute', bottom:0, right:0, border:'2px solid white'}} />
+                        </div>
+                    ) : (
+                        <div className={`status-dot ${tankOverdueCount > 0 ? 'red' : 'green'}`} />
+                    )}
                     <div className="tank-details">
                       <div className="title-row">
                         <h3>{tank.name}</h3>
-                        <div 
-                          role="button" 
-                          tabIndex={0}
-                          className="btn-edit-icon" 
-                          onClick={(e) => handleEditClick(e, tank)}
-                          title="Edit Name & Frequency"
-                        >
+                        <div role="button" tabIndex={0} className="btn-edit-icon" onClick={(e) => handleEditClick(e, tank)}>
                           <Pencil size={14} />
                         </div>
                       </div>
@@ -591,7 +561,6 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
                     const daysDiff = differenceInDays(new Date(), nextDate);
                     const isOverdue = lastDate ? daysDiff > 0 : true;
                     const uiKey = `${tank.id}-${index}`;
-                    
                     const isLargeTank = parseInt(tank.size) > 29;
                     const isWaterChange = task.name.toLowerCase().includes("water change");
                     const showSideButtons = isLargeTank && isWaterChange && tank.type !== 'Terrarium';
@@ -605,11 +574,8 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
                               {isOverdue ? `Due ${daysDiff} days ago` : `Due in ${Math.abs(daysDiff)} days`}
                             </span>
                           </div>
-                          <button onClick={(e) => toggleHistory(e, uiKey)} style={{border:'none', background:'none', cursor:'pointer', color:'#94a3b8'}}>
-                            <Clock size={16} />
-                          </button>
+                          <button onClick={(e) => toggleHistory(e, uiKey)} style={{border:'none', background:'none', cursor:'pointer', color:'#94a3b8'}}><Clock size={16} /></button>
                         </div>
-
                         <div className="btn-group">
                           {showSideButtons ? (
                             <>
@@ -617,26 +583,42 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
                               <button onClick={() => onComplete(tank.id, index, 'Right')} className="btn btn-secondary">Right</button>
                             </>
                           ) : (
-                            <button onClick={() => onComplete(tank.id, index, null)} className="btn btn-primary">
-                              <CheckCircle size={16} /> Complete
-                            </button>
+                            <button onClick={() => onComplete(tank.id, index, null)} className="btn btn-primary"><CheckCircle size={16} /> Complete</button>
                           )}
                         </div>
-
                         {expandedTask === uiKey && (
                            <div style={{marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid #e2e8f0'}}>
                              <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#94a3b8', textTransform:'uppercase'}}>History</p>
                              {task.history && task.history.length > 0 ? (
                                <ul style={{listStyle:'none', padding:0, margin:'0.5rem 0'}}>
-                                 {task.history.slice(0, 3).map((entry, hIndex) => (
-                                   <li key={hIndex} style={{display:'flex', justifyContent:'space-between', padding:'0.25rem 0', color:'#64748b', fontSize:'0.9rem'}}>
-                                     <span>
-                                         {format(new Date(entry.date || entry), 'MMM d')} 
-                                         {entry.side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'#e2e8f0', borderRadius:'4px', fontSize:'0.75rem'}}>{entry.side}</span>}
-                                     </span>
-                                     <button onClick={() => onDeleteHistory(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>
-                                   </li>
-                                 ))}
+                                 {task.history.slice(0, 5).map((entry, hIndex) => {
+                                     const dateStr = typeof entry === 'string' ? entry : entry.date;
+                                     const side = typeof entry === 'object' ? entry.side : null;
+                                     const uniqueId = `${tank.id}-${index}-${hIndex}`;
+                                     const isEditing = editingEntryId === uniqueId;
+                                     return (
+                                       <li key={hIndex} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0.5rem 0', borderBottom:'1px dashed #f1f5f9', fontSize:'0.9rem'}}>
+                                         {isEditing ? (
+                                             <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
+                                                 <input type="date" value={editDateValue} onChange={(e) => setEditDateValue(e.target.value)} style={{border:'1px solid #cbd5e1', borderRadius:'4px', padding:'2px 4px', fontSize:'0.85rem'}} />
+                                                 <button onClick={() => saveEdit(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'#22c55e', cursor:'pointer'}}><Save size={16}/></button>
+                                                 <button onClick={() => setEditingEntryId(null)} style={{border:'none', background:'none', color:'#94a3b8', cursor:'pointer'}}><XCircle size={16}/></button>
+                                             </div>
+                                         ) : (
+                                             <div style={{color:'#64748b'}}>
+                                                 <span style={{fontWeight:500}}>{format(new Date(dateStr), 'MMM d, yyyy')}</span>
+                                                 {side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'#e2e8f0', borderRadius:'4px', fontSize:'0.75rem'}}>{side}</span>}
+                                             </div>
+                                         )}
+                                         {!isEditing && (
+                                            <div style={{display:'flex', gap:'0.5rem'}}>
+                                                <button onClick={() => startEditing(tank.id, index, hIndex, dateStr)} style={{border:'none', background:'none', color:'#3b82f6', cursor:'pointer'}}><Pencil size={14}/></button>
+                                                <button onClick={() => handleDeleteHistory(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>
+                                            </div>
+                                         )}
+                                       </li>
+                                     );
+                                 })}
                                </ul>
                              ) : <span style={{color:'#cbd5e1', fontStyle:'italic', fontSize:'0.9rem'}}>No history</span>}
                            </div>
@@ -644,21 +626,11 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
                       </div>
                     );
                   })}
-
                   <div className="notes-section">
                     <div className="notes-title">Notes</div>
                     <div className="note-input-group">
-                      <input 
-                        type="text" 
-                        value={noteInput}
-                        onChange={(e) => setNoteInput(e.target.value)}
-                        placeholder="Add a note..."
-                        className="note-input"
-                        onKeyDown={(e) => e.key === 'Enter' && submitNote(tank.id)}
-                      />
-                      <button onClick={() => submitNote(tank.id)} className="btn-add">
-                        <Plus size={18} />
-                      </button>
+                      <input type="text" value={noteInput} onChange={(e) => setNoteInput(e.target.value)} placeholder="Add a note..." className="note-input" onKeyDown={(e) => e.key === 'Enter' && submitNote(tank.id)} />
+                      <button onClick={() => submitNote(tank.id)} className="btn-add"><Plus size={18} /></button>
                     </div>
                     <div className="notes-list">
                       {tank.notes && tank.notes.length > 0 ? (
@@ -680,11 +652,8 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onAddNote, onDelet
           );
         })}
       </div>
-
       <div style={{textAlign:'center'}}>
-        <button onClick={onReset} className="btn-reset">
-          <Trash2 size={14}/> Reset All Data
-        </button>
+        <button onClick={onReset} className="btn-reset"><Trash2 size={14}/> Reset All Data</button>
       </div>
     </div>
   );
