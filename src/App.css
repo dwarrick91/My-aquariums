@@ -1,22 +1,43 @@
-/* --- LAYOUT --- */
+/* =========================================
+   1. GLOBAL RESET & BASICS
+   ========================================= */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f3f4f6;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* =========================================
+   2. MAIN LAYOUT STRUCTURE
+   ========================================= */
 .app-container {
   display: flex;
   height: 100vh;
-  background-color: #f3f4f6;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  overflow: hidden;
+  width: 100vw;
+  overflow: hidden; /* Prevents outer page scroll */
 }
 
-/* --- SIDEBAR --- */
+/* --- SIDEBAR (Desktop) --- */
 .sidebar {
   width: 260px;
-  background-color: #0f172a; 
+  background-color: #0f172a; /* Slate 900 */
   color: white;
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
   transition: transform 0.3s ease;
-  z-index: 1000; 
+  z-index: 2000;
+  height: 100%;
 }
 
 .sidebar-header {
@@ -30,7 +51,8 @@
 .sidebar-header h1 {
   margin: 0;
   font-size: 1.25rem;
-  font-weight: bold;
+  font-weight: 700;
+  color: white;
 }
 
 .sidebar-nav {
@@ -39,13 +61,14 @@
   flex-direction: column;
   gap: 0.5rem;
   overflow-y: auto;
+  flex: 1;
 }
 
 .section-label {
   font-size: 0.75rem;
   text-transform: uppercase;
   color: #94a3b8;
-  font-weight: bold;
+  font-weight: 700;
   margin-top: 1.5rem;
   margin-bottom: 0.5rem;
   padding-left: 0.5rem;
@@ -57,8 +80,9 @@
   color: #cbd5e1;
   text-decoration: none;
   border-radius: 0.5rem;
-  transition: background 0.2s;
+  transition: background-color 0.2s;
   text-align: left;
+  font-size: 0.95rem;
 }
 
 .nav-link:hover {
@@ -66,53 +90,66 @@
   color: white;
 }
 
-/* --- MAIN CONTENT --- */
+/* --- MAIN CONTENT AREA --- */
 .main-content {
   flex: 1;
   position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background-color: #f3f4f6;
+  width: 100%;
 }
 
 .mobile-header {
   background: white;
   padding: 1rem;
-  display: flex;
+  display: none; /* Hidden on Desktop */
   align-items: center;
   justify-content: center;
   box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  display: none; 
   position: relative;
   z-index: 50;
+  flex-shrink: 0;
+  width: 100%;
 }
 
 .mobile-header button {
   position: absolute;
   left: 1rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #334155;
 }
 
 .mobile-header h2 {
   margin: 0;
   font-size: 1.25rem;
-  text-align: center;
+  font-weight: 700;
+  color: #1e293b;
 }
 
+/* Scrollable Container for Dashboard/Swipe */
 .content-scroll-area {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 2rem;
   display: flex;
   flex-direction: column;
-  align-items: center; 
+  align-items: center;
+  width: 100%;
 }
 
-/* --- DASHBOARD CARDS --- */
+/* =========================================
+   3. DASHBOARD (LIST VIEW) STYLES
+   ========================================= */
 .dashboard-container {
   width: 100%;
-  max-width: 900px;
-  margin: 0 auto; 
-  padding-bottom: 6rem;
+  max-width: 800px;
+  margin: 0 auto;
+  padding-bottom: 6rem; /* Space for FAB */
 }
 
 .status-banner {
@@ -124,18 +161,19 @@
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .status-badge {
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
-  font-weight: bold;
+  font-weight: 700;
   font-size: 0.875rem;
 }
-
 .status-badge.green { background: #dcfce7; color: #15803d; }
 .status-badge.red { background: #fee2e2; color: #b91c1c; }
 
+/* Tank Card (Accordion) */
 .tank-card {
   background: white;
   border-radius: 1rem;
@@ -144,6 +182,7 @@
   overflow: hidden;
   transition: all 0.2s;
   width: 100%;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 
 .tank-card.open {
@@ -162,14 +201,9 @@
   cursor: pointer;
   text-align: left;
 }
+.card-header:hover { background-color: #f8fafc; }
 
-.header-content {
-  flex: 1;
-}
-
-.card-header:hover {
-  background-color: #f8fafc;
-}
+.header-content { flex: 1; }
 
 .tank-info {
   display: flex;
@@ -186,9 +220,7 @@
 .status-dot.green { background-color: #22c55e; }
 .status-dot.red { background-color: #ef4444; box-shadow: 0 0 0 4px #fee2e2; }
 
-.tank-details {
-  flex: 1;
-}
+.tank-details { flex: 1; }
 
 .title-row {
   display: flex;
@@ -199,26 +231,23 @@
 .btn-edit-icon {
   color: #94a3b8;
   padding: 4px;
-  border-radius: 4px;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
 }
+.btn-edit-icon:hover { background-color: #e2e8f0; color: #3b82f6; }
 
-.btn-edit-icon:hover {
-  background-color: #e2e8f0;
-  color: #3b82f6;
-}
-
-.tank-details h3 { margin: 0; font-size: 1.125rem; color: #1e293b; }
-.tank-details p { margin: 0; font-size: 0.875rem; color: #64748b; }
+.tank-details h3 { margin: 0; font-size: 1.125rem; font-weight: 600; color: #1e293b; }
+.tank-details p { margin: 0; font-size: 0.875rem; color: #64748b; margin-top: 2px; }
 
 .card-body {
   background-color: #f8fafc;
   border-top: 1px solid #e2e8f0;
-  padding: 1rem;
+  padding: 1.25rem;
 }
 
+/* Tasks inside Dashboard Card */
 .task-item {
   background: white;
   padding: 1rem;
@@ -237,26 +266,33 @@
 .due-text.red { color: #ef4444; }
 .due-text.gray { color: #94a3b8; }
 
+/* =========================================
+   4. BUTTON STYLES (Restored)
+   ========================================= */
 .btn-group { display: flex; gap: 0.5rem; }
 
 .btn {
   flex: 1;
   padding: 0.75rem;
   border-radius: 0.5rem;
-  font-weight: bold;
+  font-weight: 600;
   border: none;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  font-size: 0.95rem;
+  transition: background 0.1s;
 }
 
 .btn-primary { background-color: #2563eb; color: white; }
 .btn-primary:hover { background-color: #1d4ed8; }
+.btn-primary:active { transform: scale(0.98); }
 
 .btn-secondary { background-color: #dbeafe; color: #1e40af; }
 .btn-secondary:hover { background-color: #bfdbfe; }
+.btn-secondary:active { transform: scale(0.98); }
 
 .btn-reset {
   background: none;
@@ -267,92 +303,11 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  font-size: 0.85rem;
 }
 .btn-reset:hover { color: #ef4444; }
 
-/* NOTES SECTION */
-.notes-section {
-  margin-top: 1.5rem;
-  border-top: 1px dashed #cbd5e1;
-  padding-top: 1rem;
-}
-
-.notes-title {
-  font-size: 0.75rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  color: #64748b;
-  margin-bottom: 0.5rem;
-}
-
-.note-input-group {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.note-input {
-  flex: 1;
-  padding: 0.5rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.375rem;
-  font-size: 0.9rem;
-}
-
-.btn-add {
-  background-color: #f1f5f9;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.375rem;
-  padding: 0.5rem;
-  cursor: pointer;
-  color: #475569;
-}
-
-.btn-add:hover {
-  background-color: #e2e8f0;
-  color: #0f172a;
-}
-
-.notes-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.note-item {
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.375rem;
-  padding: 0.75rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.note-content {
-  display: flex;
-  flex-direction: column;
-}
-
-.note-date {
-  font-size: 0.7rem;
-  color: #94a3b8;
-  margin-bottom: 0.25rem;
-}
-
-.btn-delete-note {
-  background: none;
-  border: none;
-  color: #cbd5e1;
-  cursor: pointer;
-  padding: 0;
-}
-
-.btn-delete-note:hover {
-  color: #ef4444;
-}
-
-/* FAB BUTTON */
+/* Floating Action Button (Add) */
 .fab-add {
   position: fixed;
   bottom: 2rem;
@@ -363,7 +318,7 @@
   background-color: #2563eb;
   color: white;
   border: none;
-  box-shadow: 0 4px 6px rgba(37, 99, 235, 0.4);
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -371,127 +326,174 @@
   z-index: 1500;
   transition: transform 0.2s;
 }
+.fab-add:hover { transform: scale(1.1); }
+.fab-add:active { transform: scale(0.95); }
 
-.fab-add:hover {
-  transform: scale(1.1);
-  background-color: #1d4ed8;
+/* =========================================
+   5. NOTES & HISTORY STYLES
+   ========================================= */
+.notes-section {
+  margin-top: 1.5rem;
+  border-top: 1px dashed #cbd5e1;
+  padding-top: 1rem;
 }
+.notes-title { font-size: 0.75rem; font-weight: bold; text-transform: uppercase; color: #64748b; margin-bottom: 0.5rem; }
 
-/* MODAL STYLES */
+.note-input-group { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
+.note-input { 
+  flex: 1; padding: 0.6rem; 
+  border: 1px solid #cbd5e1; 
+  border-radius: 0.375rem; 
+  font-size: 0.9rem; 
+}
+.btn-add { 
+  background-color: #f1f5f9; 
+  border: 1px solid #cbd5e1; 
+  border-radius: 0.375rem; 
+  padding: 0.5rem; 
+  cursor: pointer; 
+  color: #475569; 
+}
+.btn-add:hover { background-color: #e2e8f0; }
+
+.notes-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.note-item { 
+  background: white; 
+  border: 1px solid #e2e8f0; 
+  border-radius: 0.375rem; 
+  padding: 0.75rem; 
+  display: flex; justify-content: space-between; align-items: flex-start; 
+}
+.note-content { display: flex; flex-direction: column; }
+.note-date { font-size: 0.7rem; color: #94a3b8; margin-bottom: 0.25rem; }
+.btn-delete-note { background: none; border: none; color: #cbd5e1; cursor: pointer; padding: 0; }
+.btn-delete-note:hover { color: #ef4444; }
+
+/* =========================================
+   6. MODAL STYLES (Compact Edit Screen)
+   ========================================= */
 .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
+  position: fixed; inset: 0; 
+  background-color: rgba(0, 0, 0, 0.5); 
+  display: flex; align-items: center; justify-content: center; 
+  z-index: 3000; 
   padding: 1rem;
 }
 
 .modal-content {
   background: white;
   width: 100%;
-  max-width: 400px;
+  max-width: 380px; /* Compact width */
+  max-height: 90vh; /* Prevents overflow */
   border-radius: 1rem;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  animation: slideIn 0.3s ease-out;
+  display: flex;
+  flex-direction: column;
+  animation: slideIn 0.2s ease-out;
 }
 
-@keyframes slideIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+@keyframes slideIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
 .modal-header {
-  padding: 1rem 1.5rem;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: flex; justify-content: space-between; align-items: center;
   background-color: #f8fafc;
+  flex-shrink: 0;
+}
+.modal-header h2 { margin: 0; font-size: 1.15rem; color: #1e293b; }
+.btn-close { background: none; border: none; color: #64748b; cursor: pointer; }
+
+/* Scrollable Form Body */
+.modal-content form {
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
 }
 
-.modal-header h2 { margin: 0; font-size: 1.25rem; color: #1e293b; }
-.btn-close { background: none; border: none; color: #64748b; cursor: pointer; }
-.modal-content form { padding: 1.5rem; }
-.form-group { margin-bottom: 1rem; }
-.form-label { display: block; font-size: 0.875rem; font-weight: 500; color: #475569; margin-bottom: 0.5rem; }
-.form-input, .form-select { width: 100%; padding: 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.5rem; font-size: 1rem; box-sizing: border-box; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem; }
-.btn-cancel { padding: 0.75rem 1rem; background-color: white; border: 1px solid #cbd5e1; border-radius: 0.5rem; color: #475569; font-weight: 500; cursor: pointer; }
-.btn-save { padding: 0.75rem 1.5rem; background-color: #2563eb; border: none; border-radius: 0.5rem; color: white; font-weight: 500; cursor: pointer; }
-.btn-delete-modal { margin-right: auto; padding: 0.75rem 1rem; background-color: #fee2e2; color: #b91c1c; border: none; border-radius: 0.5rem; font-weight: 500; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+.form-group { margin-bottom: 0.85rem; }
+.form-label { display: block; font-size: 0.85rem; font-weight: 600; color: #475569; margin-bottom: 0.35rem; }
+.form-input, .form-select {
+  width: 100%;
+  padding: 0.65rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+.form-input:focus, .form-select:focus { outline: 2px solid #3b82f6; border-color: #3b82f6; }
 
-/* --- MOBILE SPECIFIC --- */
+.modal-actions {
+  display: flex; justify-content: flex-end; gap: 0.75rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn-cancel { padding: 0.6rem 1rem; background-color: white; border: 1px solid #cbd5e1; border-radius: 0.5rem; color: #475569; font-weight: 600; cursor: pointer; }
+.btn-save { padding: 0.6rem 1.25rem; background-color: #2563eb; border: none; border-radius: 0.5rem; color: white; font-weight: 600; cursor: pointer; }
+.btn-delete-modal { margin-right: auto; padding: 0.6rem 1rem; background-color: #fee2e2; color: #b91c1c; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+
+/* =========================================
+   7. MOBILE RESPONSIVE OVERRIDES
+   ========================================= */
 @media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
-    height: 100%;
-    transform: translateX(-100%);
-  }
-  .sidebar.open {
-    transform: translateX(0);
-  }
-  .mobile-header { display: flex; }
-  .mobile-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 50;
-  }
+  /* Sidebar toggle behavior */
+  .sidebar { position: fixed; height: 100%; transform: translateX(-100%); width: 80%; max-width: 300px; }
+  .sidebar.open { transform: translateX(0); }
   
-  /* FIX: Reduce Grey Space */
-  .content-scroll-area { 
-    padding: 0.5rem; /* Tighter padding */
-    width: 100%;
+  .mobile-header { display: flex; }
+  
+  .mobile-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
+  
+  /* EDGE-TO-EDGE Content */
+  .content-scroll-area {
+    padding: 0; /* No padding around container */
+    padding-top: 1rem;
+    width: 100vw;
     box-sizing: border-box;
-    align-items: center; 
+    align-items: center;
   }
   
   .dashboard-container {
     width: 100%;
+    margin: 0;
+    padding-bottom: 6rem;
   }
 
+  /* Cards go flush against the screen */
   .tank-card {
-    margin-bottom: 0.75rem; /* Smaller gap between cards */
-  }
-
-  /* Keep FAB Visible */
-  .fab-add { 
-    bottom: 5rem; 
-    right: 1.5rem; 
-  }
-
-  /* Hide Arrows */
-  .swiper-button-next,
-  .swiper-button-prev {
-    display: none !important;
-  }
-
-  /* Center Dashboard Items */
-  .card-header {
-    flex-direction: column;
-    text-align: center;
-    padding: 1.5rem;
-  }
-  
-  .tank-info {
-    flex-direction: column;
-    gap: 0.75rem;
     width: 100%;
-    justify-content: center;
+    margin-bottom: 0.5rem;
+    border-radius: 0; /* Square edges look better flush */
+    border-left: none;
+    border-right: none;
   }
 
-  .tank-details {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+  /* Status banner flush */
+  .status-banner {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin-bottom: 1rem;
   }
 
-  .title-row {
-    justify-content: center;
-    width: 100%;
+  /* Center alignment for list view */
+  .card-header { flex-direction: column; text-align: center; padding: 1.5rem; }
+  .tank-info { flex-direction: column; gap: 0.75rem; width: 100%; justify-content: center; }
+  .tank-details { display: flex; flex-direction: column; align-items: center; }
+  .title-row { justify-content: center; width: 100%; }
+
+  /* FAB Position High enough to clear bottom nav bars */
+  .fab-add { bottom: 5rem; right: 1.5rem; }
+
+  /* Hide Swiper Arrows */
+  .swiper-button-next, .swiper-button-prev { display: none !important; }
+
+  /* FORCE FULL WIDTH ON SWIPER SLIDES */
+  .swiper-slide {
+    width: 100vw !important;
+    border-radius: 0 !important; /* Square edges */
   }
 }

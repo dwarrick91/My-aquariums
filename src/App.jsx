@@ -5,7 +5,7 @@ import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Down
 import SwipeView from './SwipeView';
 import './App.css';
 
-// --- FULL DATA CONFIGURATION (Restored V26) ---
+// --- FULL DATA CONFIGURATION (Restored V41) ---
 const INITIAL_DATA = [
   {
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
@@ -199,7 +199,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
           <div style={{marginBottom:'1.5rem', display:'flex', flexDirection:'column', alignItems:'center'}}>
              <div 
                style={{
-                 width:'100px', height:'100px', borderRadius:'50%', 
+                 width:'80px', height:'80px', borderRadius:'50%', 
                  backgroundColor:'#f1f5f9', border:'2px dashed #cbd5e1',
                  display:'flex', alignItems:'center', justifyContent:'center',
                  overflow:'hidden', cursor:'pointer', position:'relative'
@@ -210,7 +210,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
                     <img src={formData.image} alt="Preview" style={{width:'100%', height:'100%', objectFit:'cover'}} />
                 ) : (
                     <div style={{textAlign:'center', color:'#94a3b8'}}>
-                        <ImageIcon size={24} style={{marginBottom:'4px'}}/>
+                        <ImageIcon size={20} style={{marginBottom:'2px'}}/>
                         <div style={{fontSize:'0.7rem'}}>Add Photo</div>
                     </div>
                 )}
@@ -276,8 +276,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // V26 to restore data
-    const saved = localStorage.getItem('aquariumDataV26'); 
+    const saved = localStorage.getItem('aquariumDataV41'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
@@ -292,7 +291,7 @@ function App() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV26', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV41', JSON.stringify(tanks));
   }, [tanks]);
 
   useEffect(() => {
@@ -428,7 +427,7 @@ function App() {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
       setCategories(DEFAULT_CATEGORIES);
-      localStorage.removeItem('aquariumDataV26');
+      localStorage.removeItem('aquariumDataV41');
       localStorage.removeItem('aquariumCategoriesV2');
     }
   };

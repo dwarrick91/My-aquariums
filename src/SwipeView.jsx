@@ -31,7 +31,9 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
   };
 
   const saveEdit = (tankId, taskIndex, histIndex) => {
-    if (editDateValue) onEditHistory(tankId, taskIndex, histIndex, editDateValue);
+    if (editDateValue) {
+        onEditHistory(tankId, taskIndex, histIndex, editDateValue);
+    }
     setEditingEntryId(null);
   };
 
@@ -58,8 +60,9 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: '0.5rem'
+    justifyContent: 'flex-start',
+    paddingTop: '0.5rem',
+    overflowX: 'hidden' // STOP GROWING
   };
 
   if (!tanks || tanks.length === 0) {
@@ -70,24 +73,62 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
     );
   }
 
+  // --- BUTTON STYLES ---
+  const buttonContainerStyle = {
+    marginTop: 'auto', 
+    paddingTop: '1rem', 
+    width: '100%',
+    display: 'flex',
+    gap: '1rem',
+    height: 'auto', 
+    minHeight: '60px' 
+  };
+
+  const singleButtonStyle = {
+    width: '100%', 
+    padding: '1rem', 
+    background: '#2563eb', 
+    color: 'white', 
+    border: 'none', 
+    borderRadius: '0.75rem', 
+    fontWeight: 'bold', 
+    fontSize: '1rem', 
+    cursor: 'pointer', 
+    display: 'flex', 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    gap: '0.5rem', 
+    boxShadow: '0 4px 6px rgba(37, 99, 235, 0.2)',
+    height: '100%' 
+  };
+
+  const splitButtonStyle = {
+    flex: 1, 
+    padding: '1rem', 
+    background: '#dbeafe', 
+    color: '#1e40af', 
+    border: 'none', 
+    borderRadius: '0.75rem', 
+    fontWeight: 'bold', 
+    fontSize: '1rem', 
+    cursor: 'pointer',
+    height: '100%', 
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center'
+  };
+
   return (
     <div style={containerStyle}>
-      <h2 style={{
-          fontSize:'1.25rem', 
-          fontWeight:'bold', 
-          color:'#1e293b', 
-          marginBottom:'0.5rem', 
-          textTransform:'capitalize',
-          textAlign: 'center'
-      }}>
+      <h2 style={{fontSize:'1.25rem', fontWeight:'bold', color:'#1e293b', marginBottom:'0.5rem', textTransform:'capitalize', textAlign: 'center'}}>
         {displayTitle}
       </h2>
       
-      {/* FIX: Taller card calculation to reduce grey space */}
-      <div style={{width:'95%', maxWidth:'400px', height:'calc(100vh - 140px)', margin: '0 auto', minHeight: '450px'}}>
+      {/* FIX: Width 100% and overflow hidden to stop expansion */}
+      <div style={{width:'100%', maxWidth:'100%', height:'calc(100vh - 130px)', margin: '0 auto', minHeight: '480px', overflow: 'hidden'}}>
         <Swiper
           modules={[Pagination, Navigation]}
-          spaceBetween={10}
+          spaceBetween={0} // No space between slides on mobile
           slidesPerView={1}
           navigation={true}
           pagination={{ clickable: true }}
@@ -98,6 +139,15 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
             let primaryTaskIndex = tank.tasks.findIndex(t => taskKeywords.some(k => t.name.toLowerCase().includes(k)));
             if (primaryTaskIndex === -1 && tank.tasks.length > 0) primaryTaskIndex = 0;
             const primaryTask = primaryTaskIndex >= 0 ? tank.tasks[primaryTaskIndex] : null;
+
+            let buttonLabel = "Log Action";
+            if (primaryTask) {
+                const lowerName = primaryTask.name.toLowerCase();
+                if (lowerName.includes("watering")) buttonLabel = "Log Watering";
+                else if (lowerName.includes("replace")) buttonLabel = "Log Replace Filter";
+                else if (lowerName.includes("mist")) buttonLabel = "Log Misting";
+                else buttonLabel = `Log ${primaryTask.name}`;
+            }
 
             const isLargeTank = parseInt(tank.size) > 29;
             const isTerrarium = tank.type === "Terrarium";
@@ -111,88 +161,50 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
 
             return (
               <SwiperSlide key={tank.id} style={{
-                background: 'white',
-                borderRadius: '1rem',
-                boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)',
-                display: 'flex',
-                flexDirection: 'column',
-                overflow: 'hidden',
-                height: '100%',
-                position: 'relative'
+                background: 'white', 
+                /* Removed border-radius for full mobile view */
+                boxShadow: 'none', 
+                display: 'flex', flexDirection: 'column', overflow: 'hidden',
+                height: '100%', position: 'relative'
               }}>
-                {/* Header Image Background */}
-                <div style={{height:'80px', background:'linear-gradient(135deg, #2563eb, #06b6d4)', flexShrink: 0}}></div>
-                
-                <div style={{marginTop:'-40px', textAlign:'center', padding:'0 1rem', flexShrink: 0}}>
-                  <div 
-                    onClick={() => onEditItem(tank)}
-                    style={{
-                        width:'80px', height:'80px', margin:'0 auto', 
-                        background:'white', borderRadius:'50%', 
-                        display:'flex', alignItems:'center', justifyContent:'center', 
-                        fontSize:'2rem', boxShadow:'0 4px 6px rgba(0,0,0,0.1)', 
-                        overflow:'hidden', cursor:'pointer', position:'relative'
-                    }}
-                  >
-                    {tank.image ? (
-                        <img src={tank.image} alt="" style={{width:'100%', height:'100%', objectFit:'cover'}} />
-                    ) : (
-                        <span>{tank.category === 'hermit' ? '🦀' : '🐠'}</span>
-                    )}
+                <div style={{height:'90px', background:'linear-gradient(135deg, #2563eb, #06b6d4)', flexShrink: 0}}></div>
+                <div style={{marginTop:'-45px', textAlign:'center', padding:'0 1rem', flexShrink: 0}}>
+                  <div onClick={() => onEditItem(tank)} style={{width:'90px', height:'90px', margin:'0 auto', background:'white', borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'2.5rem', boxShadow:'0 4px 6px rgba(0,0,0,0.1)', overflow:'hidden', cursor:'pointer', position:'relative'}} title="Tap to Edit Details">
+                    {tank.image ? (<img src={tank.image} alt="" style={{width:'100%', height:'100%', objectFit:'cover'}} />) : (<span>{tank.category === 'hermit' ? '🦀' : (tank.category === 'plants' ? '🌿' : (tank.category === 'rodi' ? '💧' : '🐠'))}</span>)}
                   </div>
-
-                  <h3 style={{fontSize:'1.4rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0.25rem 0'}}>{tank.name}</h3>
-                  <span style={{color:'#64748b', fontSize:'0.85rem'}}>{tank.size} • {tank.type}</span>
+                  <h3 style={{fontSize:'1.25rem', fontWeight:'bold', color:'#1e293b', margin:'0.75rem 0 0.25rem 0'}}>{tank.name}</h3>
+                  <span style={{color:'#64748b', fontSize:'0.9rem'}}>{tank.size} • {tank.type}</span>
                 </div>
 
-                <div style={{padding:'1rem 1.5rem', flex:1, display:'flex', flexDirection:'column', justifyContent: 'center'}}>
-                  
-                  <div style={{position:'relative', background:'#f8fafc', padding:'1rem', borderRadius:'0.75rem', border:'1px solid #e2e8f0', textAlign:'center', marginBottom:'auto'}}>
-                    <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b', textTransform:'uppercase', margin:0}}>
-                        {primaryTask ? `Last ${primaryTask.name}` : "Last Action"}
+                <div style={{padding:'1rem', flex:1, display:'flex', flexDirection:'column'}}>
+                  <div style={{position:'relative', background:'#f8fafc', padding:'1.25rem 1rem', borderRadius:'0.75rem', border:'1px solid #e2e8f0', textAlign:'center', marginBottom:'auto', minHeight: '130px', display: 'flex', flexDirection: 'column', justifyContent: 'center'}}>
+                    <p style={{fontSize:'0.7rem', fontWeight:'bold', color:'#64748b', textTransform:'uppercase', margin:0, paddingRight:'50px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'}}>{primaryTask ? `Last ${primaryTask.name}` : "Last Action"}</p>
+                    <p style={{fontSize:'1.4rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0 0'}}>
+                      {primaryTask && primaryTask.lastCompleted ? (<span>{new Date(primaryTask.lastCompleted).toLocaleDateString()}{lastSide && <span style={{marginLeft:'8px', color:'#64748b', fontWeight:'normal', fontSize:'1rem'}}>({lastSide})</span>}</span>) : 'Never'}
                     </p>
-                    <p style={{fontSize:'1.25rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0 0'}}>
-                      {primaryTask && primaryTask.lastCompleted 
-                        ? (
-                            <span>
-                              {new Date(primaryTask.lastCompleted).toLocaleDateString()}
-                              {lastSide && <span style={{marginLeft:'8px', color:'#64748b', fontWeight:'normal'}}>({lastSide})</span>}
-                            </span>
-                          )
-                        : 'Never'}
-                    </p>
-                    
                     <div style={{position:'absolute', top:'10px', right:'10px', display:'flex', gap:'8px'}}>
                         <button onClick={() => toggleNotes(tank.id)} style={{border:'none', background:'none', color: isNotesOpen ? '#2563eb' : '#94a3b8', cursor:'pointer'}}><MessageSquare size={18} /></button>
-                        {primaryTask && (
-                            <button onClick={() => toggleHistory(tank.id)} style={{border:'none', background:'none', color: isHistoryOpen ? '#2563eb' : '#94a3b8', cursor:'pointer'}}><Clock size={18} /></button>
-                        )}
+                        {primaryTask && <button onClick={() => toggleHistory(tank.id)} style={{border:'none', background:'none', color: isHistoryOpen ? '#2563eb' : '#94a3b8', cursor:'pointer'}}><Clock size={18} /></button>}
                     </div>
                   </div>
                   
                   {primaryTask && (
-                    <div style={{marginTop:'auto', paddingTop: '1.5rem'}}>
+                    <div style={buttonContainerStyle}>
                       {showSideButtons ? (
-                        <div style={{display:'flex', gap:'1rem'}}>
-                          <button onClick={() => onComplete(tank.id, primaryTaskIndex, 'Left')} style={{flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'}}>Left</button>
-                          <button onClick={() => onComplete(tank.id, primaryTaskIndex, 'Right')} style={{flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'}}>Right</button>
-                        </div>
+                        <>
+                          <button onClick={() => onComplete(tank.id, primaryTaskIndex, 'Left')} style={splitButtonStyle}>Left</button>
+                          <button onClick={() => onComplete(tank.id, primaryTaskIndex, 'Right')} style={splitButtonStyle}>Right</button>
+                        </>
                       ) : (
-                        <button 
-                          onClick={() => onComplete(tank.id, primaryTaskIndex, null)}
-                          style={{
-                            width:'100%', padding:'1rem', background:'#2563eb', color:'white', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:'0.5rem', boxShadow:'0 4px 6px rgba(37, 99, 235, 0.2)'
-                          }}
-                        >
+                        <button onClick={() => onComplete(tank.id, primaryTaskIndex, null)} style={singleButtonStyle}>
                           <Droplets size={20} />
-                          Log {primaryTask.name}
+                          {buttonLabel}
                         </button>
                       )}
                     </div>
                   )}
                 </div>
 
-                {/* History and Notes Overlays (Keep existing logic here) */}
                 {isHistoryOpen && primaryTask && (
                     <div style={{position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'white', zIndex:20, display:'flex', flexDirection:'column'}}>
                         <div style={{padding:'1rem', borderBottom:'1px solid #e2e8f0', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f8fafc'}}>
