@@ -5,7 +5,7 @@ import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Down
 import SwipeView from './SwipeView';
 import './App.css';
 
-// --- FULL DATA CONFIGURATION (Restored V24) ---
+// --- FULL DATA CONFIGURATION (Restored V26) ---
 const INITIAL_DATA = [
   {
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
@@ -276,8 +276,8 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
 
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // V24 to restore data and fix bugs
-    const saved = localStorage.getItem('aquariumDataV24'); 
+    // V26 to restore data
+    const saved = localStorage.getItem('aquariumDataV26'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
@@ -292,7 +292,7 @@ function App() {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    localStorage.setItem('aquariumDataV24', JSON.stringify(tanks));
+    localStorage.setItem('aquariumDataV26', JSON.stringify(tanks));
   }, [tanks]);
 
   useEffect(() => {
@@ -428,7 +428,7 @@ function App() {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
       setCategories(DEFAULT_CATEGORIES);
-      localStorage.removeItem('aquariumDataV24');
+      localStorage.removeItem('aquariumDataV26');
       localStorage.removeItem('aquariumCategoriesV2');
     }
   };

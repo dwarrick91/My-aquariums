@@ -52,13 +52,15 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
     setNoteInput("");
   };
 
+  // --- RESPONSIVE CONTAINER STYLE ---
   const containerStyle = {
     height: '100%',
     width: '100%',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    paddingTop: '1rem'
+    justifyContent: 'center', // Vertically center the card
+    paddingTop: '0.5rem'
   };
 
   if (!tanks || tanks.length === 0) {
@@ -71,32 +73,37 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
 
   return (
     <div style={containerStyle}>
-      <h2 style={{fontSize:'1.5rem', fontWeight:'bold', color:'#1e293b', marginBottom:'1.5rem', textTransform:'capitalize'}}>
+      <h2 style={{
+          fontSize:'1.25rem', 
+          fontWeight:'bold', 
+          color:'#1e293b', 
+          marginBottom:'1rem', 
+          textTransform:'capitalize',
+          textAlign: 'center'
+      }}>
         {displayTitle}
       </h2>
       
-      <div style={{width:'100%', maxWidth:'450px', height:'600px', margin: '0 auto'}}>
+      {/* FIX: Height is now calculated based on viewport height (vh) 
+         minus the header size, ensuring it fits on screen without scrolling.
+      */}
+      <div style={{width:'100%', maxWidth:'400px', height:'calc(100vh - 180px)', margin: '0 auto', minHeight: '450px'}}>
         <Swiper
           modules={[Pagination, Navigation]}
           spaceBetween={20}
           slidesPerView={1}
           navigation={true}
           pagination={{ clickable: true }}
-          style={{height:'100%', paddingBottom:'40px'}}
+          style={{height:'100%', paddingBottom:'30px'}}
         >
           {tanks.map((tank) => {
-            // --- UPDATED TASK LOGIC ---
-            // Find the "Primary" task (Water Change, Watering, Replace Filter, etc)
             const taskKeywords = ["water change", "watering", "replace", "mist"];
             let primaryTaskIndex = tank.tasks.findIndex(t => taskKeywords.some(k => t.name.toLowerCase().includes(k)));
-            // Fallback to first task if no specific keyword matches
             if (primaryTaskIndex === -1 && tank.tasks.length > 0) primaryTaskIndex = 0;
-            
             const primaryTask = primaryTaskIndex >= 0 ? tank.tasks[primaryTaskIndex] : null;
 
             const isLargeTank = parseInt(tank.size) > 29;
             const isTerrarium = tank.type === "Terrarium";
-            // Check if "Left/Right" split is actually needed
             const showSideButtons = isLargeTank && !isTerrarium && primaryTask && primaryTask.name.toLowerCase().includes("water change");
 
             const latestHistory = primaryTask && primaryTask.history && primaryTask.history.length > 0 ? primaryTask.history[0] : null;
@@ -113,13 +120,13 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
-                height: '540px',
+                height: '100%', // Fill the responsive container
                 position: 'relative'
               }}>
-                <div style={{height:'100px', background:'linear-gradient(135deg, #2563eb, #06b6d4)'}}></div>
+                {/* Header Image Background */}
+                <div style={{height:'80px', background:'linear-gradient(135deg, #2563eb, #06b6d4)', flexShrink: 0}}></div>
                 
-                <div style={{marginTop:'-40px', textAlign:'center', padding:'0 1rem'}}>
-                  
+                <div style={{marginTop:'-40px', textAlign:'center', padding:'0 1rem', flexShrink: 0}}>
                   <div 
                     onClick={() => onEditItem(tank)}
                     style={{
@@ -129,7 +136,6 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                         fontSize:'2rem', boxShadow:'0 4px 6px rgba(0,0,0,0.1)', 
                         overflow:'hidden', cursor:'pointer', position:'relative'
                     }}
-                    title="Tap to Edit Details"
                   >
                     {tank.image ? (
                         <img src={tank.image} alt="" style={{width:'100%', height:'100%', objectFit:'cover'}} />
@@ -138,15 +144,15 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                     )}
                   </div>
 
-                  <h3 style={{fontSize:'1.5rem', fontWeight:'bold', color:'#1e293b', margin:'1rem 0 0.5rem 0'}}>{tank.name}</h3>
-                  <span style={{color:'#64748b', fontSize:'0.875rem'}}>{tank.size} • {tank.type}</span>
+                  <h3 style={{fontSize:'1.4rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0.25rem 0'}}>{tank.name}</h3>
+                  <span style={{color:'#64748b', fontSize:'0.85rem'}}>{tank.size} • {tank.type}</span>
                 </div>
 
-                <div style={{padding:'2rem', flex:1, display:'flex', flexDirection:'column'}}>
+                <div style={{padding:'1rem 1.5rem', flex:1, display:'flex', flexDirection:'column', justifyContent: 'center'}}>
                   
                   <div style={{position:'relative', background:'#f8fafc', padding:'1rem', borderRadius:'0.75rem', border:'1px solid #e2e8f0', textAlign:'center', marginBottom:'auto'}}>
                     <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#64748b', textTransform:'uppercase', margin:0}}>
-                        {primaryTask ? `Last ${primaryTask.name}` : "Last Maintenance"}
+                        {primaryTask ? `Last ${primaryTask.name}` : "Last Action"}
                     </p>
                     <p style={{fontSize:'1.25rem', fontWeight:'bold', color:'#1e293b', margin:'0.5rem 0 0 0'}}>
                       {primaryTask && primaryTask.lastCompleted 
@@ -168,7 +174,7 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                   </div>
                   
                   {primaryTask && (
-                    <div style={{marginTop:'2rem'}}>
+                    <div style={{marginTop:'auto', paddingTop: '1.5rem'}}>
                       {showSideButtons ? (
                         <div style={{display:'flex', gap:'1rem'}}>
                           <button onClick={() => onComplete(tank.id, primaryTaskIndex, 'Left')} style={{flex:1, padding:'1rem', background:'#dbeafe', color:'#1e40af', border:'none', borderRadius:'0.75rem', fontWeight:'bold', fontSize:'1rem', cursor:'pointer'}}>Left</button>
