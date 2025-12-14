@@ -16,7 +16,7 @@
   flex-direction: column;
   flex-shrink: 0;
   transition: transform 0.3s ease;
-  z-index: 1000; /* Fixed: High Z-Index to show over content */
+  z-index: 1000; 
 }
 
 .sidebar-header {
@@ -112,7 +112,7 @@
   width: 100%;
   max-width: 900px;
   margin: 0 auto; 
-  padding-bottom: 5rem;
+  padding-bottom: 6rem; /* Extra padding so content doesn't get hidden behind FAB */
 }
 
 .status-banner {
@@ -270,6 +270,7 @@
 }
 .btn-reset:hover { color: #ef4444; }
 
+/* NOTES SECTION */
 .notes-section {
   margin-top: 1.5rem;
   border-top: 1px dashed #cbd5e1;
@@ -307,6 +308,11 @@
   color: #475569;
 }
 
+.btn-add:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
 .notes-list {
   display: flex;
   flex-direction: column;
@@ -342,6 +348,11 @@
   padding: 0;
 }
 
+.btn-delete-note:hover {
+  color: #ef4444;
+}
+
+/* --- FAB BUTTON (UPDATED) --- */
 .fab-add {
   position: fixed;
   bottom: 2rem;
@@ -357,8 +368,13 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 50;
+  z-index: 1500; /* Raised z-index to float above everything */
   transition: transform 0.2s;
+}
+
+.fab-add:hover {
+  transform: scale(1.1);
+  background-color: #1d4ed8;
 }
 
 /* MODAL STYLES */
@@ -426,19 +442,20 @@
     z-index: 50;
   }
   
-  /* FIXED: Flex Center the content area */
   .content-scroll-area { 
     padding: 1rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    align-items: center; 
   }
   
   .dashboard-container {
     width: 100%;
   }
 
-  .fab-add { bottom: 1.5rem; right: 1.5rem; }
+  /* FIXED: Move FAB up on mobile so it's not hidden */
+  .fab-add { 
+    bottom: 5rem; 
+    right: 1.5rem; 
+  }
 
   /* Hide Arrows */
   .swiper-button-next,

@@ -52,7 +52,6 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
     setNoteInput("");
   };
 
-  // --- RESPONSIVE CONTAINER STYLE ---
   const containerStyle = {
     height: '100%',
     width: '100%',
@@ -84,10 +83,8 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
         {displayTitle}
       </h2>
       
-      {/* FIX: Height is now calculated based on viewport height (vh) 
-         minus the header size, ensuring it fits on screen without scrolling.
-      */}
-      <div style={{width:'100%', maxWidth:'400px', height:'calc(100vh - 180px)', margin: '0 auto', minHeight: '450px'}}>
+      {/* FIX: Height is conservatively calculated to fit safely on mobile screens */}
+      <div style={{width:'100%', maxWidth:'400px', height:'calc(100vh - 200px)', margin: '0 auto', minHeight: '400px'}}>
         <Swiper
           modules={[Pagination, Navigation]}
           spaceBetween={20}
