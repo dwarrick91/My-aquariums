@@ -58,7 +58,7 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center', // Vertically center the card
+    justifyContent: 'center',
     paddingTop: '0.5rem'
   };
 
@@ -76,18 +76,18 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
           fontSize:'1.25rem', 
           fontWeight:'bold', 
           color:'#1e293b', 
-          marginBottom:'1rem', 
+          marginBottom:'0.5rem', 
           textTransform:'capitalize',
           textAlign: 'center'
       }}>
         {displayTitle}
       </h2>
       
-      {/* FIX: Height is conservatively calculated to fit safely on mobile screens */}
-      <div style={{width:'100%', maxWidth:'400px', height:'calc(100vh - 200px)', margin: '0 auto', minHeight: '400px'}}>
+      {/* FIX: Taller card calculation to reduce grey space */}
+      <div style={{width:'95%', maxWidth:'400px', height:'calc(100vh - 140px)', margin: '0 auto', minHeight: '450px'}}>
         <Swiper
           modules={[Pagination, Navigation]}
-          spaceBetween={20}
+          spaceBetween={10}
           slidesPerView={1}
           navigation={true}
           pagination={{ clickable: true }}
@@ -117,7 +117,7 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
-                height: '100%', // Fill the responsive container
+                height: '100%',
                 position: 'relative'
               }}>
                 {/* Header Image Background */}
@@ -192,6 +192,7 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                   )}
                 </div>
 
+                {/* History and Notes Overlays (Keep existing logic here) */}
                 {isHistoryOpen && primaryTask && (
                     <div style={{position:'absolute', top:0, left:0, width:'100%', height:'100%', background:'white', zIndex:20, display:'flex', flexDirection:'column'}}>
                         <div style={{padding:'1rem', borderBottom:'1px solid #e2e8f0', display:'flex', justifyContent:'space-between', alignItems:'center', background:'#f8fafc'}}>

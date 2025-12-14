@@ -101,7 +101,7 @@
 .content-scroll-area {
   flex: 1;
   overflow-y: auto;
-  padding: 1rem;
+  padding: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center; 
@@ -112,7 +112,7 @@
   width: 100%;
   max-width: 900px;
   margin: 0 auto; 
-  padding-bottom: 6rem; /* Extra padding so content doesn't get hidden behind FAB */
+  padding-bottom: 6rem;
 }
 
 .status-banner {
@@ -352,7 +352,7 @@
   color: #ef4444;
 }
 
-/* --- FAB BUTTON (UPDATED) --- */
+/* FAB BUTTON */
 .fab-add {
   position: fixed;
   bottom: 2rem;
@@ -368,7 +368,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 1500; /* Raised z-index to float above everything */
+  z-index: 1500;
   transition: transform 0.2s;
 }
 
@@ -442,8 +442,11 @@
     z-index: 50;
   }
   
+  /* FIX: Reduce Grey Space */
   .content-scroll-area { 
-    padding: 1rem;
+    padding: 0.5rem; /* Tighter padding */
+    width: 100%;
+    box-sizing: border-box;
     align-items: center; 
   }
   
@@ -451,7 +454,11 @@
     width: 100%;
   }
 
-  /* FIXED: Move FAB up on mobile so it's not hidden */
+  .tank-card {
+    margin-bottom: 0.75rem; /* Smaller gap between cards */
+  }
+
+  /* Keep FAB Visible */
   .fab-add { 
     bottom: 5rem; 
     right: 1.5rem; 
