@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
-import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Download, Upload, Pencil, Save, XCircle, Image as ImageIcon } from 'lucide-react';
+import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Download, Upload, Pencil, Save, XCircle, Image as ImageIcon, Settings } from 'lucide-react';
 import SwipeView from './SwipeView';
 import './App.css';
 
-// --- FULL DATA CONFIGURATION (Restored V43) ---
+// --- FULL DATA CONFIGURATION (V46) ---
 const INITIAL_DATA = [
   {
     id: 1, name: "The Monster", category: "home", type: "Freshwater", size: "135 Gallon",
@@ -111,7 +111,49 @@ const INITIAL_DATA = [
 
 const DEFAULT_CATEGORIES = ['home', 'hermit', 'plants', 'meemaw', 'rodi'];
 
-// --- UNIVERSAL ITEM MODAL ---
+// --- THEME MODAL ---
+const ThemeModal = ({ isOpen, onClose, currentTheme, setTheme }) => {
+  if (!isOpen) return null;
+  const themes = [
+    { id: 'original', name: 'Original Blue' },
+    { id: 'lotr', name: 'Lord of the Rings' },
+    { id: 'christmas', name: 'Christmas' },
+    { id: 'halloween', name: 'Halloween' }
+  ];
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-content">
+        <div className="modal-header">
+          <h2>Select Theme</h2>
+          <button onClick={onClose} className="btn-close"><X size={20}/></button>
+        </div>
+        <div style={{padding: '1.5rem'}}>
+          {themes.map(t => (
+            <button
+              key={t.id}
+              onClick={() => { setTheme(t.id); onClose(); }}
+              style={{
+                width: '100%', padding: '1rem', marginBottom: '0.5rem',
+                border: currentTheme === t.id ? '2px solid var(--primary-color)' : '1px solid var(--border-color)',
+                borderRadius: '0.5rem',
+                background: 'var(--bg-card-secondary)',
+                color: 'var(--text-main)',
+                fontWeight: 'bold',
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}
+            >
+              {t.name} {currentTheme === t.id && "✓"}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// --- ITEM MODAL ---
 const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCategories }) => {
   const defaultState = {
     name: '',
@@ -200,7 +242,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
              <div 
                style={{
                  width:'80px', height:'80px', borderRadius:'50%', 
-                 backgroundColor:'#f1f5f9', border:'2px dashed #cbd5e1',
+                 backgroundColor:'var(--bg-card-secondary)', border:'2px dashed var(--border-color)',
                  display:'flex', alignItems:'center', justifyContent:'center',
                  overflow:'hidden', cursor:'pointer', position:'relative'
                }}
@@ -209,7 +251,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
                 {formData.image ? (
                     <img src={formData.image} alt="Preview" style={{width:'100%', height:'100%', objectFit:'cover'}} />
                 ) : (
-                    <div style={{textAlign:'center', color:'#94a3b8'}}>
+                    <div style={{textAlign:'center', color:'var(--text-secondary)'}}>
                         <ImageIcon size={20} style={{marginBottom:'2px'}}/>
                         <div style={{fontSize:'0.6rem'}}>Add Photo</div>
                     </div>
@@ -274,10 +316,11 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
   );
 };
 
+// --- MAIN APP COMPONENT ---
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // V43 to restore data and fix sync logic
-    const saved = localStorage.getItem('aquariumDataV43'); 
+    // V46 forces clean data load
+    const saved = localStorage.getItem('aquariumDataV46'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
 
@@ -286,13 +329,24 @@ function App() {
     return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
   });
 
+  const [currentTheme, setCurrentTheme] = useState(() => {
+    return localStorage.getItem('appTheme') || 'original';
+  });
+
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isModalOpen, setModalOpen] = useState(false);
+  const [isThemeModalOpen, setThemeModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null); 
   const fileInputRef = useRef(null);
 
+  // Theme Effect
   useEffect(() => {
-    localStorage.setItem('aquariumDataV43', JSON.stringify(tanks));
+    document.body.className = `theme-${currentTheme}`;
+    localStorage.setItem('appTheme', currentTheme);
+  }, [currentTheme]);
+
+  useEffect(() => {
+    localStorage.setItem('aquariumDataV46', JSON.stringify(tanks));
   }, [tanks]);
 
   useEffect(() => {
@@ -309,8 +363,7 @@ function App() {
     }
   };
 
-  // --- IMMUTABLE STATE HANDLERS (FIXES DATA SYNC) ---
-
+  // --- IMMUTABLE STATE HANDLERS ---
   const handleSaveItem = (formData, newCategoryLabel) => {
     if (newCategoryLabel) {
         if (!categories.includes(formData.category)) {
@@ -321,12 +374,10 @@ function App() {
     if (editingItem) {
       setTanks(prevTanks => prevTanks.map(tank => {
         if (tank.id === editingItem.id) {
-          // Creating a FRESH copy of the tasks array
           const updatedTasks = tank.tasks.map((task, i) => {
              if(i === 0) return { ...task, frequency: parseInt(formData.frequency) };
              return task;
           });
-          
           return {
             ...tank,
             name: formData.name,
@@ -361,11 +412,8 @@ function App() {
   const handleComplete = (tankId, taskIndex, side = null) => {
     setTanks(prevTanks => prevTanks.map(tank => {
         if (tank.id !== tankId) return tank;
-
-        // Map over tasks to find the specific one and return a NEW object for it
         const newTasks = tank.tasks.map((task, idx) => {
             if (idx !== taskIndex) return task;
-
             const now = new Date().toISOString();
             return {
                 ...task,
@@ -373,38 +421,25 @@ function App() {
                 history: [{ date: now, side: side }, ...task.history]
             };
         });
-
-        // Return a NEW tank object
         return { ...tank, tasks: newTasks };
     }));
   };
 
   const handleDeleteHistory = (tankId, taskIndex, historyIndex) => {
     if(!window.confirm("Delete this history entry?")) return;
-    
     setTanks(prevTanks => prevTanks.map(tank => {
         if (tank.id !== tankId) return tank;
-
         const newTasks = tank.tasks.map((task, idx) => {
             if (idx !== taskIndex) return task;
-
             const newHistory = [...task.history];
             newHistory.splice(historyIndex, 1);
-            
-            // Re-calculate last completed based on new top of stack
             let newLastCompleted = null;
             if(newHistory.length > 0) {
                 const newest = newHistory[0];
                 newLastCompleted = typeof newest === 'string' ? newest : newest.date;
             }
-
-            return {
-                ...task,
-                lastCompleted: newLastCompleted,
-                history: newHistory
-            };
+            return { ...task, lastCompleted: newLastCompleted, history: newHistory };
         });
-
         return { ...tank, tasks: newTasks };
     }));
   };
@@ -412,74 +447,48 @@ function App() {
   const handleEditHistory = (tankId, taskIndex, historyIndex, newDateString) => {
     setTanks(prevTanks => prevTanks.map(tank => {
         if (tank.id !== tankId) return tank;
-
         const newTasks = tank.tasks.map((task, idx) => {
             if (idx !== taskIndex) return task;
-
             const [year, month, day] = newDateString.split('-').map(Number);
             const fixedDate = new Date(year, month - 1, day);
             const newIsoString = fixedDate.toISOString();
-
             const newHistory = [...task.history];
             const entry = newHistory[historyIndex];
-            
-            // Update the specific entry
             if (typeof entry === 'object') {
                 newHistory[historyIndex] = { ...entry, date: newIsoString };
             } else {
                 newHistory[historyIndex] = newIsoString;
             }
-
-            // Re-sort
             newHistory.sort((a, b) => {
                 const dateA = new Date(typeof a === 'string' ? a : a.date);
                 const dateB = new Date(typeof b === 'string' ? b : b.date);
                 return dateB - dateA; 
             });
-
-            // Re-calculate latest
             let newLastCompleted = null;
             if(newHistory.length > 0) {
                 const newest = newHistory[0];
                 newLastCompleted = typeof newest === 'string' ? newest : newest.date;
             }
-
-            return {
-                ...task,
-                lastCompleted: newLastCompleted,
-                history: newHistory
-            };
+            return { ...task, lastCompleted: newLastCompleted, history: newHistory };
         });
-
         return { ...tank, tasks: newTasks };
     }));
   };
 
   const handleAddNote = (tankId, text) => {
     if (!text.trim()) return;
-    
     setTanks(prevTanks => prevTanks.map(tank => {
         if (tank.id !== tankId) return tank;
-
         const newNote = { id: Date.now(), date: new Date().toISOString(), text: text };
-        // Create NEW notes array
-        return {
-            ...tank,
-            notes: [newNote, ...tank.notes]
-        };
+        return { ...tank, notes: [newNote, ...tank.notes] };
     }));
   };
 
   const handleDeleteNote = (tankId, noteId) => {
     if(!window.confirm("Delete this note?")) return;
-
     setTanks(prevTanks => prevTanks.map(tank => {
         if (tank.id !== tankId) return tank;
-
-        return {
-            ...tank,
-            notes: tank.notes.filter(n => n.id !== noteId)
-        };
+        return { ...tank, notes: tank.notes.filter(n => n.id !== noteId) };
     }));
   };
 
@@ -487,7 +496,7 @@ function App() {
     if(window.confirm("Are you sure? This will delete ALL history.")) {
       setTanks(INITIAL_DATA);
       setCategories(DEFAULT_CATEGORIES);
-      localStorage.removeItem('aquariumDataV43');
+      localStorage.removeItem('aquariumDataV46');
       localStorage.removeItem('aquariumCategoriesV2');
     }
   };
@@ -535,6 +544,7 @@ function App() {
     <Router>
       <div className="app-container">
         {isSidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>}
+        
         <ItemModal 
           isOpen={isModalOpen} 
           onClose={() => setModalOpen(false)} 
@@ -543,6 +553,14 @@ function App() {
           itemToEdit={editingItem}
           availableCategories={categories} 
         />
+
+        <ThemeModal
+            isOpen={isThemeModalOpen}
+            onClose={() => setThemeModalOpen(false)}
+            currentTheme={currentTheme}
+            setTheme={setCurrentTheme}
+        />
+
         <input type="file" ref={fileInputRef} style={{display: 'none'}} accept=".json" onChange={restoreData} />
 
         <aside className={`sidebar ${isSidebarOpen ? 'open' : ''}`}>
@@ -553,19 +571,15 @@ function App() {
           <nav className="sidebar-nav">
             <Link to="/" onClick={() => setSidebarOpen(false)} className="nav-link">Dashboard (Overview)</Link>
             <div className="section-label">Swipe Lists</div>
-            {categories.map(cat => {
-                let label = cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                if (cat === 'home') label = 'Home Aquariums';
-                if (cat === 'hermit') label = "Jackson's Hermit Crabs";
-                if (cat === 'meemaw') label = "Meemaw's Tank";
-                if (cat === 'rodi') label = "RODI";
-                return (
-                    <Link key={cat} to={`/swipe/${cat}`} onClick={() => setSidebarOpen(false)} className="nav-link">
-                        {label}
-                    </Link>
-                );
-            })}
-            <div className="section-label">Data Settings</div>
+            {categories.map(cat => (
+                <Link key={cat} to={`/swipe/${cat}`} onClick={() => setSidebarOpen(false)} className="nav-link">
+                    {cat.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                </Link>
+            ))}
+            <div className="section-label">Settings</div>
+            <button onClick={() => {setThemeModalOpen(true); setSidebarOpen(false);}} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
+              <Settings size={18} /> Select Theme
+            </button>
             <button onClick={backupData} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
               <Download size={18} /> Backup Data
             </button>
@@ -577,7 +591,7 @@ function App() {
 
         <main className="main-content">
           <header className="mobile-header">
-            <button onClick={() => setSidebarOpen(true)} style={{background:'none', border:'none'}}><Menu size={24} color="#334155" /></button>
+            <button onClick={() => setSidebarOpen(true)} style={{background:'none', border:'none'}}><Menu size={24} color="var(--text-main)" /></button>
             <h2>My Tanks</h2>
           </header>
           <div className="content-scroll-area">
@@ -650,8 +664,8 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
     <div className="dashboard-container">
       <div className="status-banner">
         <div>
-          <h1 style={{margin:0, fontSize:'1.5rem', color:'#1e293b'}}>My Aquarium</h1>
-          <p style={{margin:0, color:'#64748b'}}>Overview</p>
+          <h1 style={{margin:0, fontSize:'1.5rem', color:'var(--text-main)'}}>My Aquarium</h1>
+          <p style={{margin:0, color:'var(--text-secondary)'}}>Overview</p>
         </div>
         <div className={`status-badge ${totalOverdue > 0 ? 'red' : 'green'}`}>
           {totalOverdue > 0 ? `${totalOverdue} Tasks Overdue` : "All Systems Normal"}
@@ -690,7 +704,7 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                     </div>
                   </div>
                 </div>
-                {isOpen ? <ChevronUp size={20} color="#3b82f6" /> : <ChevronDown size={20} color="#cbd5e1" />}
+                {isOpen ? <ChevronUp size={20} color="var(--primary-color)" /> : <ChevronDown size={20} color="var(--text-secondary)" />}
               </button>
 
               {isOpen && (
@@ -709,12 +723,12 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                       <div key={index} className="task-item">
                         <div className="task-header">
                           <div>
-                            <span style={{display:'block', fontWeight:600, color:'#334155'}}>{task.name}</span>
+                            <span style={{display:'block', fontWeight:600, color:'var(--text-main)'}}>{task.name}</span>
                             <span className={`due-text ${isOverdue ? 'red' : 'gray'}`}>
                               {isOverdue ? `Due ${daysDiff} days ago` : `Due in ${Math.abs(daysDiff)} days`}
                             </span>
                           </div>
-                          <button onClick={(e) => toggleHistory(e, uiKey)} style={{border:'none', background:'none', cursor:'pointer', color:'#94a3b8'}}><Clock size={16} /></button>
+                          <button onClick={(e) => toggleHistory(e, uiKey)} style={{border:'none', background:'none', cursor:'pointer', color:'var(--text-secondary)'}}><Clock size={16} /></button>
                         </div>
                         <div className="btn-group">
                           {showSideButtons ? (
@@ -727,8 +741,8 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                           )}
                         </div>
                         {expandedTask === uiKey && (
-                           <div style={{marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid #e2e8f0'}}>
-                             <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'#94a3b8', textTransform:'uppercase'}}>History</p>
+                           <div style={{marginTop:'1rem', paddingTop:'1rem', borderTop:'1px solid var(--border-color)'}}>
+                             <p style={{fontSize:'0.75rem', fontWeight:'bold', color:'var(--text-secondary)', textTransform:'uppercase'}}>History</p>
                              {task.history && task.history.length > 0 ? (
                                <ul style={{listStyle:'none', padding:0, margin:'0.5rem 0'}}>
                                  {task.history.slice(0, 5).map((entry, hIndex) => {
@@ -737,31 +751,30 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                                      const uniqueId = `${tank.id}-${index}-${hIndex}`;
                                      const isEditing = editingEntryId === uniqueId;
                                      return (
-                                       <li key={hIndex} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0.5rem 0', borderBottom:'1px dashed #f1f5f9', fontSize:'0.9rem'}}>
+                                       <li key={hIndex} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0.5rem 0', borderBottom:'1px dashed var(--border-color)', fontSize:'0.9rem'}}>
                                          {isEditing ? (
                                              <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
                                                  <input type="date" value={editDateValue} onChange={(e) => setEditDateValue(e.target.value)} style={{border:'1px solid #cbd5e1', borderRadius:'4px', padding:'2px 4px', fontSize:'0.85rem'}} />
-                                                 <button onClick={() => saveEdit(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'#22c55e', cursor:'pointer'}}><Save size={16}/></button>
-                                                 <button onClick={() => setEditingEntryId(null)} style={{border:'none', background:'none', color:'#94a3b8', cursor:'pointer'}}><XCircle size={16}/></button>
+                                                 <button onClick={() => saveEdit(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'var(--status-good-text)', cursor:'pointer'}}><Save size={16}/></button>
+                                                 <button onClick={() => setEditingEntryId(null)} style={{border:'none', background:'none', color:'var(--text-secondary)', cursor:'pointer'}}><XCircle size={16}/></button>
                                              </div>
                                          ) : (
-                                             <div style={{color:'#64748b'}}>
+                                             <div style={{color:'var(--text-secondary)'}}>
                                                  <span style={{fontWeight:500}}>{format(new Date(dateStr), 'MMM d, yyyy')}</span>
-                                                 {side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'#e2e8f0', borderRadius:'4px', fontSize:'0.75rem'}}>{side}</span>}
+                                                 {side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'var(--bg-card)', borderRadius:'4px', fontSize:'0.75rem'}}>{side}</span>}
                                              </div>
                                          )}
                                          {!isEditing && (
                                             <div style={{display:'flex', gap:'0.5rem'}}>
-                                                <button onClick={() => startEditing(tank.id, index, hIndex, dateStr)} style={{border:'none', background:'none', color:'#3b82f6', cursor:'pointer'}}><Pencil size={14}/></button>
-                                                {/* FIXED: CORRECT FUNCTION NAME onDeleteHistory */}
-                                                <button onClick={() => onDeleteHistory(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'#ef4444', cursor:'pointer'}}><Trash2 size={14}/></button>
+                                                <button onClick={() => startEditing(tank.id, index, hIndex, dateStr)} style={{border:'none', background:'none', color:'var(--primary-color)', cursor:'pointer'}}><Pencil size={14}/></button>
+                                                <button onClick={() => onDeleteHistory(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'var(--status-bad-text)', cursor:'pointer'}}><Trash2 size={14}/></button>
                                             </div>
                                          )}
                                        </li>
                                      );
                                  })}
                                </ul>
-                             ) : <span style={{color:'#cbd5e1', fontStyle:'italic', fontSize:'0.9rem'}}>No history</span>}
+                             ) : <span style={{color:'var(--text-secondary)', fontStyle:'italic', fontSize:'0.9rem'}}>No history</span>}
                            </div>
                         )}
                       </div>
@@ -784,7 +797,7 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                             <button onClick={() => onDeleteNote(tank.id, note.id)} className="btn-delete-note"><Trash2 size={14} /></button>
                           </div>
                         ))
-                      ) : <p style={{fontSize:'0.85rem', color:'#cbd5e1', fontStyle:'italic', textAlign:'center'}}>No notes yet.</p>}
+                      ) : <p style={{fontSize:'0.85rem', color:'var(--text-secondary)', fontStyle:'italic', textAlign:'center'}}>No notes yet.</p>}
                     </div>
                   </div>
                 </div>
