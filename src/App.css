@@ -300,4 +300,18 @@ button { font-family: inherit; }
   .fab-add { bottom: 5rem; right: 1.5rem; }
   .swiper-button-next, .swiper-button-prev { display: none !important; }
   .swiper-slide { width: 100vw !important; border-radius: 0 !important; }
+  /* Add to your CSS file */
+
+@keyframes success-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); box-shadow: 0 0 15px var(--status-good-bg); }
+  100% { transform: scale(1); }
+}
+
+.animate-success {
+  animation: success-pop 0.3s ease-out;
+  background-color: var(--status-good-bg) !important;
+  color: var(--status-good-text) !important;
+  border-color: var(--status-good-text) !important;
+}
 }

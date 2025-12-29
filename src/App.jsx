@@ -2,8 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
 import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Download, Upload, Pencil, Save, XCircle, Image as ImageIcon, Settings } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import SwipeView from './SwipeView';
-import './App.css';
+import './App.css'; 
 
 // --- FULL DATA CONFIGURATION (V46) ---
 const INITIAL_DATA = [
@@ -111,6 +112,51 @@ const INITIAL_DATA = [
 
 const DEFAULT_CATEGORIES = ['home', 'hermit', 'plants', 'meemaw', 'rodi'];
 
+// --- CELEBRATION LOGIC ---
+const triggerCelebration = () => {
+  const currentTheme = document.body.className;
+  let colors = ['#2563eb', '#06b6d4']; 
+  let shapes = ['circle', 'square'];
+
+  if (currentTheme.includes('lotr')) {
+    colors = ['#d4af37', '#2f5e41', '#ffffff']; 
+    shapes = ['star'];
+  } else if (currentTheme.includes('christmas')) {
+    colors = ['#dc2626', '#166534', '#ffffff'];
+  } else if (currentTheme.includes('halloween')) {
+    colors = ['#ea580c', '#4c1d95'];
+  }
+
+  confetti({
+    particleCount: 150,
+    spread: 70,
+    origin: { y: 0.6 },
+    colors: colors,
+    shapes: shapes
+  });
+};
+
+// --- WRAPPER BUTTON FOR ANIMATION ---
+const ConfettiButton = ({ onClick, className, children, style }) => {
+  const [isAnimating, setIsAnimating] = useState(false);
+  const handleClick = (e) => {
+    e.stopPropagation();
+    setIsAnimating(true);
+    triggerCelebration();
+    if (onClick) onClick(e);
+    setTimeout(() => setIsAnimating(false), 500);
+  };
+  return (
+    <button 
+      onClick={handleClick} 
+      className={`${className} ${isAnimating ? 'animate-success' : ''}`}
+      style={style}
+    >
+      {children}
+    </button>
+  );
+};
+
 // --- THEME MODAL ---
 const ThemeModal = ({ isOpen, onClose, currentTheme, setTheme }) => {
   if (!isOpen) return null;
@@ -160,30 +206,38 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
     category: 'home',
     type: '',
     size: '',
-    frequency: 7,
-    image: null
+    image: null,
+    tasks: [] 
   };
 
   const [formData, setFormData] = useState(defaultState);
   const [isNewCategoryMode, setIsNewCategoryMode] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newTaskName, setNewTaskName] = useState("");
+  const [newTaskFreq, setNewTaskFreq] = useState(7);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
       setIsNewCategoryMode(false);
       setNewCategoryName("");
+      setNewTaskName("");
+      setNewTaskFreq(7);
+
       if (itemToEdit) {
         setFormData({
           name: itemToEdit.name,
           category: itemToEdit.category,
           type: itemToEdit.type,
           size: itemToEdit.size,
-          frequency: itemToEdit.tasks[0]?.frequency || 7,
-          image: itemToEdit.image || null
+          image: itemToEdit.image || null,
+          tasks: itemToEdit.tasks || []
         });
       } else {
-        setFormData(defaultState);
+        setFormData({
+            ...defaultState,
+            tasks: [{ name: "Water Change", frequency: 7, lastCompleted: null, history: [] }]
+        });
       }
     }
   }, [isOpen, itemToEdit]);
@@ -211,6 +265,23 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
     }
   };
 
+  const handleRemoveTask = (indexToRemove) => {
+    setFormData(prev => ({
+        ...prev,
+        tasks: prev.tasks.filter((_, i) => i !== indexToRemove)
+    }));
+  };
+
+  const handleAddTask = () => {
+    if(!newTaskName.trim()) return;
+    setFormData(prev => ({
+        ...prev,
+        tasks: [...prev.tasks, { name: newTaskName, frequency: parseInt(newTaskFreq), lastCompleted: null, history: [] }]
+    }));
+    setNewTaskName("");
+    setNewTaskFreq(7);
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     let finalCategory = formData.category;
@@ -218,6 +289,9 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
         const safeId = newCategoryName.trim().toLowerCase().replace(/\s+/g, '-');
         if(!safeId) return alert("Please enter a category name");
         finalCategory = safeId;
+    }
+    if (formData.tasks.length === 0) {
+        if(!window.confirm("This item has no tasks. Are you sure?")) return;
     }
     onSave({ ...formData, category: finalCategory }, isNewCategoryMode ? newCategoryName : null);
     onClose();
@@ -273,14 +347,7 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
                 </select>
             ) : (
                 <div style={{display:'flex', gap:'0.5rem'}}>
-                    <input 
-                        autoFocus
-                        placeholder="Enter new category name..." 
-                        value={newCategoryName} 
-                        onChange={(e) => setNewCategoryName(e.target.value)} 
-                        className="form-input" 
-                        required
-                    />
+                    <input autoFocus placeholder="Enter new category name..." value={newCategoryName} onChange={(e) => setNewCategoryName(e.target.value)} className="form-input" required />
                     <button type="button" onClick={() => setIsNewCategoryMode(false)} className="btn-cancel" style={{padding:'0.6rem'}}>Cancel</button>
                 </div>
             )}
@@ -298,14 +365,33 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
             <label className="form-label">Size</label>
             <input name="size" placeholder="e.g. 10 Gallon" value={formData.size} onChange={handleChange} className="form-input" required />
           </div>
-          <div className="form-group">
-            <label className="form-label">Task Frequency (Days)</label>
-            <input type="number" name="frequency" value={formData.frequency} onChange={handleChange} className="form-input" min="1" required />
+
+          <div className="form-group" style={{marginTop:'1.5rem', borderTop:'1px solid var(--border-color)', paddingTop:'1rem'}}>
+            <label className="form-label" style={{marginBottom:'0.5rem'}}>Tasks & Schedule</label>
+            <div style={{display:'flex', flexDirection:'column', gap:'0.5rem', marginBottom:'1rem'}}>
+                {formData.tasks.map((task, index) => (
+                    <div key={index} style={{display:'flex', alignItems:'center', justifyContent:'space-between', background:'var(--bg-card-secondary)', padding:'0.5rem', borderRadius:'6px'}}>
+                        <div style={{fontSize:'0.9rem'}}>
+                            <strong>{task.name}</strong> <span style={{color:'var(--text-secondary)'}}>(Every {task.frequency} days)</span>
+                        </div>
+                        <button type="button" onClick={() => handleRemoveTask(index)} style={{background:'none', border:'none', color:'var(--status-bad-text)', cursor:'pointer'}}><X size={16}/></button>
+                    </div>
+                ))}
+            </div>
+            <div style={{display:'flex', gap:'0.5rem', alignItems:'flex-end'}}>
+                <div style={{flex:2}}>
+                    <input placeholder="New Task Name..." value={newTaskName} onChange={(e) => setNewTaskName(e.target.value)} className="form-input" style={{fontSize:'0.9rem'}} />
+                </div>
+                <div style={{flex:1}}>
+                    <input type="number" placeholder="Days" value={newTaskFreq} onChange={(e) => setNewTaskFreq(e.target.value)} className="form-input" style={{fontSize:'0.9rem'}} min="1" />
+                </div>
+                <button type="button" onClick={handleAddTask} className="btn-save" style={{padding:'0.6rem', height:'auto'}}>Add</button>
+            </div>
           </div>
 
           <div className="modal-actions">
             {itemToEdit && (
-                <button type="button" onClick={handleDeleteClick} className="btn-delete-modal"><Trash2 size={18} /> Delete</button>
+                <button type="button" onClick={handleDeleteClick} className="btn-delete-modal"><Trash2 size={18} /> Delete Item</button>
             )}
             <button type="button" onClick={onClose} className="btn-cancel">Cancel</button>
             <button type="submit" className="btn-save">{buttonText}</button>
@@ -319,7 +405,6 @@ const ItemModal = ({ isOpen, onClose, onSave, onDelete, itemToEdit, availableCat
 // --- MAIN APP COMPONENT ---
 function App() {
   const [tanks, setTanks] = useState(() => {
-    // V46 forces clean data load
     const saved = localStorage.getItem('aquariumDataV46'); 
     return saved ? JSON.parse(saved) : INITIAL_DATA;
   });
@@ -339,9 +424,12 @@ function App() {
   const [editingItem, setEditingItem] = useState(null); 
   const fileInputRef = useRef(null);
 
-  // Theme Effect
   useEffect(() => {
-    document.body.className = `theme-${currentTheme}`;
+    if (currentTheme === 'original') {
+        document.body.className = '';
+    } else {
+        document.body.className = `theme-${currentTheme}`;
+    }
     localStorage.setItem('appTheme', currentTheme);
   }, [currentTheme]);
 
@@ -363,7 +451,6 @@ function App() {
     }
   };
 
-  // --- IMMUTABLE STATE HANDLERS ---
   const handleSaveItem = (formData, newCategoryLabel) => {
     if (newCategoryLabel) {
         if (!categories.includes(formData.category)) {
@@ -374,37 +461,20 @@ function App() {
     if (editingItem) {
       setTanks(prevTanks => prevTanks.map(tank => {
         if (tank.id === editingItem.id) {
-          const updatedTasks = tank.tasks.map((task, i) => {
-             if(i === 0) return { ...task, frequency: parseInt(formData.frequency) };
-             return task;
+          const mergedTasks = formData.tasks.map(newTask => {
+            const existingTask = tank.tasks.find(t => t.name === newTask.name);
+            if (existingTask) {
+                return { ...newTask, history: existingTask.history, lastCompleted: existingTask.lastCompleted };
+            }
+            return newTask;
           });
-          return {
-            ...tank,
-            name: formData.name,
-            category: formData.category,
-            type: formData.type,
-            size: formData.size,
-            image: formData.image, 
-            tasks: updatedTasks
-          };
+
+          return { ...tank, name: formData.name, category: formData.category, type: formData.type, size: formData.size, image: formData.image, tasks: mergedTasks };
         }
         return tank;
       }));
     } else {
-      let taskName = "Water Change";
-      if (formData.category === 'plants') taskName = "Watering";
-      if (formData.category === 'rodi') taskName = "Replace Filter";
-
-      const newItem = {
-        id: Date.now(),
-        name: formData.name,
-        category: formData.category,
-        type: formData.type,
-        size: formData.size,
-        image: formData.image, 
-        notes: [],
-        tasks: [{ name: taskName, frequency: parseInt(formData.frequency), lastCompleted: null, history: [] }]
-      };
+      const newItem = { id: Date.now(), name: formData.name, category: formData.category, type: formData.type, size: formData.size, image: formData.image, notes: [], tasks: formData.tasks };
       setTanks(prev => [...prev, newItem]);
     }
   };
@@ -543,7 +613,7 @@ function App() {
   return (
     <Router>
       <div className="app-container">
-        {isSidebarOpen && <div className="mobile-overlay" onClick={() => setSidebarOpen(false)}/>}
+        {isSidebarOpen && <div className="mobile-overlay open" onClick={() => setSidebarOpen(false)}/>}
         
         <ItemModal 
           isOpen={isModalOpen} 
@@ -597,7 +667,19 @@ function App() {
           <div className="content-scroll-area">
             <Routes>
               <Route path="/" element={<CleanDashboard tanks={tanks} onComplete={handleComplete} onDeleteHistory={handleDeleteHistory} onEditHistory={handleEditHistory} onAddNote={handleAddNote} onDeleteNote={handleDeleteNote} onEditItem={openEditModal} onReset={resetData} />} />
-              <Route path="/swipe/:category" element={<SwipeWrapper tanks={tanks} onComplete={handleComplete} onAddNote={handleAddNote} onDeleteNote={handleDeleteNote} onDeleteHistory={handleDeleteHistory} onEditHistory={handleEditHistory} onEditItem={openEditModal} />} />
+              
+              <Route path="/swipe/:category" element={
+                <SwipeWrapper 
+                  tanks={tanks} 
+                  onComplete={handleComplete} 
+                  onAddNote={handleAddNote} 
+                  onDeleteNote={handleDeleteNote} 
+                  onDeleteHistory={handleDeleteHistory} 
+                  onEditHistory={handleEditHistory} 
+                  onEditItem={openEditModal} 
+                />
+              } />
+              
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
@@ -614,13 +696,13 @@ const SwipeWrapper = ({ tanks, onComplete, onAddNote, onDeleteNote, onDeleteHist
   return (
     <SwipeView 
         tanks={filteredTanks} 
+        categoryName={category} 
         onComplete={onComplete} 
         onAddNote={onAddNote} 
         onDeleteNote={onDeleteNote} 
         onDeleteHistory={onDeleteHistory}
         onEditHistory={onEditHistory}
         onEditItem={onEditItem}
-        categoryName={category} 
     />
   );
 };
@@ -672,7 +754,7 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
         </div>
       </div>
 
-      <div>
+      <div className="tanks-list">
         {tanks.map(tank => {
           const isOpen = expandedTankId === tank.id;
           const tankOverdueCount = tank.tasks.filter(t => {
@@ -715,9 +797,10 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                     const daysDiff = differenceInDays(new Date(), nextDate);
                     const isOverdue = lastDate ? daysDiff > 0 : true;
                     const uiKey = `${tank.id}-${index}`;
-                    const isLargeTank = parseInt(tank.size) > 29;
+                    
+                    // Specific logic for Monster Tank Side Buttons
                     const isWaterChange = task.name.toLowerCase().includes("water change");
-                    const showSideButtons = isLargeTank && isWaterChange && tank.type !== 'Terrarium';
+                    const showSideButtons = isWaterChange && (tank.id === 1 || tank.size.includes('135'));
 
                     return (
                       <div key={index} className="task-item">
@@ -733,11 +816,11 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                         <div className="btn-group">
                           {showSideButtons ? (
                             <>
-                              <button onClick={() => onComplete(tank.id, index, 'Left')} className="btn btn-secondary">Left</button>
-                              <button onClick={() => onComplete(tank.id, index, 'Right')} className="btn btn-secondary">Right</button>
+                              <ConfettiButton onClick={() => onComplete(tank.id, index, 'Left')} className="btn btn-secondary">Left</ConfettiButton>
+                              <ConfettiButton onClick={() => onComplete(tank.id, index, 'Right')} className="btn btn-secondary">Right</ConfettiButton>
                             </>
                           ) : (
-                            <button onClick={() => onComplete(tank.id, index, null)} className="btn btn-primary"><CheckCircle size={16} /> Complete</button>
+                            <ConfettiButton onClick={() => onComplete(tank.id, index, null)} className="btn btn-primary"><CheckCircle size={16} /> Complete</ConfettiButton>
                           )}
                         </div>
                         {expandedTask === uiKey && (
@@ -753,16 +836,16 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                                      return (
                                        <li key={hIndex} style={{display:'flex', justifyContent:'space-between', alignItems:'center', padding:'0.5rem 0', borderBottom:'1px dashed var(--border-color)', fontSize:'0.9rem'}}>
                                          {isEditing ? (
-                                             <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
-                                                 <input type="date" value={editDateValue} onChange={(e) => setEditDateValue(e.target.value)} style={{border:'1px solid #cbd5e1', borderRadius:'4px', padding:'2px 4px', fontSize:'0.85rem'}} />
-                                                 <button onClick={() => saveEdit(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'var(--status-good-text)', cursor:'pointer'}}><Save size={16}/></button>
-                                                 <button onClick={() => setEditingEntryId(null)} style={{border:'none', background:'none', color:'var(--text-secondary)', cursor:'pointer'}}><XCircle size={16}/></button>
-                                             </div>
+                                           <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
+                                                <input type="date" value={editDateValue} onChange={(e) => setEditDateValue(e.target.value)} style={{border:'1px solid #cbd5e1', borderRadius:'4px', padding:'2px 4px', fontSize:'0.85rem'}} />
+                                                <button onClick={() => saveEdit(tank.id, index, hIndex)} style={{border:'none', background:'none', color:'var(--status-good-text)', cursor:'pointer'}}><Save size={16}/></button>
+                                                <button onClick={() => setEditingEntryId(null)} style={{border:'none', background:'none', color:'var(--text-secondary)', cursor:'pointer'}}><XCircle size={16}/></button>
+                                           </div>
                                          ) : (
-                                             <div style={{color:'var(--text-secondary)'}}>
-                                                 <span style={{fontWeight:500}}>{format(new Date(dateStr), 'MMM d, yyyy')}</span>
-                                                 {side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'var(--bg-card)', borderRadius:'4px', fontSize:'0.75rem'}}>{side}</span>}
-                                             </div>
+                                           <div style={{color:'var(--text-secondary)'}}>
+                                                <span style={{fontWeight:500}}>{format(new Date(dateStr), 'MMM d, yyyy')}</span>
+                                                {side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'var(--bg-card)', borderRadius:'4px', fontSize:'0.75rem'}}>{side}</span>}
+                                           </div>
                                          )}
                                          {!isEditing && (
                                             <div style={{display:'flex', gap:'0.5rem'}}>
