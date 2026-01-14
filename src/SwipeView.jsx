@@ -3,13 +3,13 @@ import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Navigation } from 'swiper/modules';
 import { Clock, Trash2, Pencil, Save, XCircle, X, MessageSquare, Plus, CheckCircle, AlertCircle } from 'lucide-react';
 import { format, differenceInDays, addDays } from 'date-fns';
-import confetti from 'canvas-confetti'; // <--- NEW IMPORT
+import confetti from 'canvas-confetti';
 
 import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
-// --- 1. NEW: Confetti Helper Function ---
+// --- CELEBRATION LOGIC ---
 const triggerCelebration = () => {
   const currentTheme = document.body.className;
   let colors = ['#2563eb', '#06b6d4']; 
@@ -33,7 +33,7 @@ const triggerCelebration = () => {
   });
 };
 
-// --- 2. NEW: Wrapper Button for Animation ---
+// --- WRAPPER BUTTON FOR ANIMATION ---
 const ConfettiButton = ({ onClick, className, children, style }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   
@@ -143,8 +143,6 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
           style={{height:'100%', paddingBottom:'30px'}}
         >
           {tanks.map((tank) => {
-            const isLargeTank = parseInt(tank.size) > 29;
-            const isTerrarium = tank.type === "Terrarium";
             const isNotesOpen = notesOpenId === tank.id;
 
             return (
@@ -176,10 +174,12 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                         const daysDiff = differenceInDays(new Date(), nextDate);
                         const isOverdue = lastDate ? daysDiff > 0 : true;
 
-                        // Specific logic
+                        // --- CORRECTED LOGIC FOR SIDE BUTTONS ---
+                        const gallons = parseInt(tank.size); // e.g. "55 Gallon" -> 55
+                        const isLarge = !isNaN(gallons) && gallons > 29;
                         const isWaterChange = task.name.toLowerCase().includes("water change");
-                        // Use tank.id === 1 or logic based on size/name
-                        const showSplitButtons = isWaterChange && (tank.id === 1 || tank.size.includes('135'));
+                        // ----------------------------------------
+                        const showSplitButtons = isWaterChange && isLarge;
 
                         return (
                             <div key={index} style={{
@@ -192,6 +192,12 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                                 <div style={{display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:'0.5rem'}}>
                                     <div>
                                         <div style={{fontWeight:'bold', fontSize:'1rem', color:'var(--text-main)'}}>{task.name}</div>
+                                        
+                                        {/* --- NEW: LAST COMPLETED DATE DISPLAY --- */}
+                                        <div style={{fontSize:'0.8rem', color:'var(--text-secondary)', marginTop:'2px'}}>
+                                           Last: {lastDate ? format(lastDate, 'EEE, MMM d') : 'Never'}
+                                        </div>
+
                                         <div style={{fontSize:'0.8rem', color: isOverdue ? 'var(--status-bad-text)' : 'var(--text-secondary)', display:'flex', alignItems:'center', gap:'4px', marginTop:'2px'}}>
                                             {isOverdue && <AlertCircle size={12}/>}
                                             {isOverdue ? `Due ${daysDiff} days ago` : `Due in ${Math.abs(daysDiff)} days`}
@@ -205,7 +211,6 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                                     </button>
                                 </div>
 
-                                {/* --- 3. REPLACED BUTTONS WITH ConfettiButton --- */}
                                 {showSplitButtons ? (
                                     <div style={{display:'flex', gap:'0.5rem'}}>
                                         <ConfettiButton onClick={() => onComplete(tank.id, index, 'Left')} className="btn-swipe-split">Left</ConfettiButton>

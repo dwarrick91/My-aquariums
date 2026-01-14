@@ -798,15 +798,24 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                     const isOverdue = lastDate ? daysDiff > 0 : true;
                     const uiKey = `${tank.id}-${index}`;
                     
-                    // Specific logic for Monster Tank Side Buttons
+                    // --- CORRECTED LOGIC FOR SIDE BUTTONS ---
+                    const gallons = parseInt(tank.size); // e.g. "55 Gallon" -> 55
+                    const isLarge = !isNaN(gallons) && gallons > 29;
                     const isWaterChange = task.name.toLowerCase().includes("water change");
-                    const showSideButtons = isWaterChange && (tank.id === 1 || tank.size.includes('135'));
+                    const showSideButtons = isWaterChange && isLarge;
+                    // ----------------------------------------
 
                     return (
                       <div key={index} className="task-item">
                         <div className="task-header">
-                          <div>
+                          <div style={{flex: 1}}>
                             <span style={{display:'block', fontWeight:600, color:'var(--text-main)'}}>{task.name}</span>
+                            
+                            {/* --- NEW: LAST COMPLETED DATE DISPLAY --- */}
+                            <div style={{fontSize:'0.8rem', color:'var(--text-secondary)', marginTop:'2px'}}>
+                               Last: {lastDate ? format(lastDate, 'EEE, MMM d') : 'Never'}
+                            </div>
+
                             <span className={`due-text ${isOverdue ? 'red' : 'gray'}`}>
                               {isOverdue ? `Due ${daysDiff} days ago` : `Due in ${Math.abs(daysDiff)} days`}
                             </span>
