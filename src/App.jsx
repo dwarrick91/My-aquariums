@@ -420,6 +420,7 @@ function App() {
 
   const [fileHandle, setFileHandle] = useState(null);
   const [lastSaved, setLastSaved] = useState(null); 
+  const [lastBackedUp, setLastBackedUp] = useState(null); // --- NEW STATE: Last File Backup
 
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isModalOpen, setModalOpen] = useState(false);
@@ -442,7 +443,7 @@ function App() {
   // --- PRIMARY MOBILE AUTO-SAVE (LocalStorage) ---
   useEffect(() => {
     localStorage.setItem('aquariumDataV46', JSON.stringify(tanks));
-    setLastSaved(new Date()); // Update indicator
+    setLastSaved(new Date()); // Update local save indicator
   }, [tanks]);
 
   useEffect(() => {
@@ -457,7 +458,7 @@ function App() {
         const writable = await fileHandle.createWritable();
         await writable.write(JSON.stringify({ tanks, categories }, null, 2));
         await writable.close();
-        setLastSaved(new Date());
+        setLastBackedUp(new Date()); // Update file backup indicator
       } catch (err) { console.error("Auto-save failed:", err); }
     };
     saveToFile();
@@ -474,6 +475,7 @@ function App() {
             types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
         });
         setFileHandle(handle);
+        setLastBackedUp(new Date()); // Initial backup timestamp
         alert("Auto-save enabled! Your changes will now be written to this file automatically.");
     } catch (err) { }
   };
@@ -619,6 +621,7 @@ function App() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    setLastBackedUp(new Date()); // Update manual backup indicator
   };
 
   const triggerFileUpload = () => { fileInputRef.current.click(); };
@@ -685,10 +688,16 @@ function App() {
             ))}
             <div className="section-label">Settings</div>
             
-            {/* SAVED STATUS INDICATOR (UPDATED FORMAT) */}
-            <div style={{padding:'0.5rem 1rem', fontSize:'0.75rem', color:'rgba(255,255,255,0.5)', display:'flex', alignItems:'center', gap:'0.5rem'}}>
-                <CheckCircle size={12} color={lastSaved ? "#4ade80" : "gray"} />
-                {lastSaved ? `Saved locally: ${format(lastSaved, 'MM/dd/yyyy h:mm:ss a')}` : 'Not saved yet'}
+            {/* SAVED STATUS INDICATORS */}
+            <div style={{padding:'0.5rem 1rem', fontSize:'0.75rem', color:'rgba(255,255,255,0.5)', display:'flex', flexDirection:'column', gap:'0.25rem'}}>
+                <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
+                    <CheckCircle size={12} color={lastSaved ? "#4ade80" : "gray"} />
+                    {lastSaved ? `App Data: ${format(lastSaved, 'MM/dd/yyyy h:mm:ss a')}` : 'App Data: Not saved'}
+                </div>
+                <div style={{display:'flex', alignItems:'center', gap:'0.5rem'}}>
+                    <Save size={12} color={lastBackedUp ? "#60a5fa" : "gray"} />
+                    {lastBackedUp ? `File Backup: ${format(lastBackedUp, 'MM/dd/yyyy h:mm:ss a')}` : 'File Backup: Never'}
+                </div>
             </div>
 
             <button onClick={() => {setThemeModalOpen(true); setSidebarOpen(false);}} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
