@@ -9,7 +9,7 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/navigation';
 
-// --- CELEBRATION LOGIC ---
+// --- Confetti Helper Function ---
 const triggerCelebration = () => {
   const currentTheme = document.body.className;
   let colors = ['#2563eb', '#06b6d4']; 
@@ -33,7 +33,7 @@ const triggerCelebration = () => {
   });
 };
 
-// --- WRAPPER BUTTON FOR ANIMATION ---
+// --- Wrapper Button for Animation ---
 const ConfettiButton = ({ onClick, className, children, style }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   
@@ -174,12 +174,17 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                         const daysDiff = differenceInDays(new Date(), nextDate);
                         const isOverdue = lastDate ? daysDiff > 0 : true;
 
-                        // --- CORRECTED LOGIC FOR SIDE BUTTONS ---
+                        // --- UPDATED SIDE BUTTON LOGIC ---
                         const gallons = parseInt(tank.size); // e.g. "55 Gallon" -> 55
                         const isLarge = !isNaN(gallons) && gallons > 29;
                         const isWaterChange = task.name.toLowerCase().includes("water change");
+                        
+                        // NEW POSITIVE CHECK FOR AQUARIUM TYPE
+                        const aquariumTypes = ['Freshwater', 'Saltwater', 'Cichlid', 'Coldwater', 'Brackish'];
+                        const isAquarium = aquariumTypes.includes(tank.type);
+
+                        const showSplitButtons = isWaterChange && isLarge && isAquarium;
                         // ----------------------------------------
-                        const showSplitButtons = isWaterChange && isLarge;
 
                         return (
                             <div key={index} style={{
@@ -193,12 +198,11 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                                     <div>
                                         <div style={{fontWeight:'bold', fontSize:'1rem', color:'var(--text-main)'}}>{task.name}</div>
                                         
-                                        {/* --- NEW: LAST COMPLETED DATE DISPLAY --- */}
-                                        <div style={{fontSize:'0.8rem', color:'var(--text-secondary)', marginTop:'2px'}}>
-                                           Last: {lastDate ? format(lastDate, 'EEE, MMM d') : 'Never'}
-                                        </div>
-
+                                        {/* VISIBLE LAST DATE + DAY OF WEEK */}
                                         <div style={{fontSize:'0.8rem', color: isOverdue ? 'var(--status-bad-text)' : 'var(--text-secondary)', display:'flex', alignItems:'center', gap:'4px', marginTop:'2px'}}>
+                                            <span style={{color:'var(--text-secondary)', marginRight:'6px'}}>
+                                              {lastDate ? `Last: ${format(lastDate, 'EEE, MMM d')}` : 'Never'}
+                                            </span>
                                             {isOverdue && <AlertCircle size={12}/>}
                                             {isOverdue ? `Due ${daysDiff} days ago` : `Due in ${Math.abs(daysDiff)} days`}
                                         </div>
@@ -263,7 +267,7 @@ export default function SwipeView({ tanks, onComplete, onDeleteHistory, onEditHi
                                                            </div>
                                                        ) : (
                                                            <div style={{color:'var(--text-secondary)', fontSize:'0.9rem'}}>
-                                                               <span style={{fontWeight:500}}>{format(new Date(dateStr), 'MMM d, yyyy')}</span>
+                                                               <span style={{fontWeight:500}}>{format(new Date(dateStr), 'EEE, MMM d, yyyy')}</span>
                                                                {side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'var(--bg-card-secondary)', borderRadius:'4px', fontSize:'0.75rem'}}>{side}</span>}
                                                            </div>
                                                        )}

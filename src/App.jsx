@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useParams, Navigate } from 'react-router-dom';
 import { differenceInDays, addDays, format } from 'date-fns';
-import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Download, Upload, Pencil, Save, XCircle, Image as ImageIcon, Settings } from 'lucide-react';
+import { CheckCircle, Clock, Trash2, ChevronUp, ChevronDown, Menu, X, Plus, Download, Upload, Pencil, Save, XCircle, Image as ImageIcon, Settings, AlertCircle, FileJson, Smartphone } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import SwipeView from './SwipeView';
 import './App.css'; 
@@ -418,11 +418,17 @@ function App() {
     return localStorage.getItem('appTheme') || 'original';
   });
 
+  const [fileHandle, setFileHandle] = useState(null);
+  const [lastSaved, setLastSaved] = useState(null); 
+
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [isModalOpen, setModalOpen] = useState(false);
   const [isThemeModalOpen, setThemeModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null); 
   const fileInputRef = useRef(null);
+
+  // Check for mobile support for the File API
+  const isDesktop = 'showSaveFilePicker' in window;
 
   useEffect(() => {
     if (currentTheme === 'original') {
@@ -433,13 +439,44 @@ function App() {
     localStorage.setItem('appTheme', currentTheme);
   }, [currentTheme]);
 
+  // --- PRIMARY MOBILE AUTO-SAVE (LocalStorage) ---
   useEffect(() => {
     localStorage.setItem('aquariumDataV46', JSON.stringify(tanks));
+    setLastSaved(new Date()); // Update indicator
   }, [tanks]);
 
   useEffect(() => {
     localStorage.setItem('aquariumCategoriesV2', JSON.stringify(categories));
   }, [categories]);
+
+  // --- DESKTOP FILE AUTO-SAVE ---
+  useEffect(() => {
+    if (!fileHandle) return;
+    const saveToFile = async () => {
+      try {
+        const writable = await fileHandle.createWritable();
+        await writable.write(JSON.stringify({ tanks, categories }, null, 2));
+        await writable.close();
+        setLastSaved(new Date());
+      } catch (err) { console.error("Auto-save failed:", err); }
+    };
+    saveToFile();
+  }, [tanks, categories, fileHandle]);
+
+  const setupAutoSave = async () => {
+    if (!isDesktop) {
+        alert("File auto-save is only supported on Desktop (Chrome/Edge). On mobile, your data is automatically saved to the app storage.");
+        return;
+    }
+    try {
+        const handle = await window.showSaveFilePicker({
+            suggestedName: `tank-backup-${format(new Date(), 'yyyy-MM-dd')}.json`,
+            types: [{ description: 'JSON File', accept: { 'application/json': ['.json'] } }],
+        });
+        setFileHandle(handle);
+        alert("Auto-save enabled! Your changes will now be written to this file automatically.");
+    } catch (err) { }
+  };
 
   const openAddModal = () => { setEditingItem(null); setModalOpen(true); };
   const openEditModal = (item) => { setEditingItem(item); setModalOpen(true); };
@@ -647,9 +684,25 @@ function App() {
                 </Link>
             ))}
             <div className="section-label">Settings</div>
+            
+            {/* SAVED STATUS INDICATOR (UPDATED FORMAT) */}
+            <div style={{padding:'0.5rem 1rem', fontSize:'0.75rem', color:'rgba(255,255,255,0.5)', display:'flex', alignItems:'center', gap:'0.5rem'}}>
+                <CheckCircle size={12} color={lastSaved ? "#4ade80" : "gray"} />
+                {lastSaved ? `Saved locally: ${format(lastSaved, 'MM/dd/yyyy h:mm:ss a')}` : 'Not saved yet'}
+            </div>
+
             <button onClick={() => {setThemeModalOpen(true); setSidebarOpen(false);}} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
               <Settings size={18} /> Select Theme
             </button>
+            
+            {/* FILE AUTO-SAVE (Desktop Only) */}
+            {isDesktop && (
+                <button onClick={setupAutoSave} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
+                    {fileHandle ? <CheckCircle size={18} color="var(--status-good-text)" /> : <FileJson size={18} />}
+                    {fileHandle ? "File Auto-Save On" : "Enable File Auto-Save"}
+                </button>
+            )}
+
             <button onClick={backupData} className="nav-link" style={{background:'none', border:'none', width:'100%', textAlign:'left', display:'flex', alignItems:'center', gap:'0.5rem', cursor:'pointer'}}>
               <Download size={18} /> Backup Data
             </button>
@@ -798,27 +851,33 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                     const isOverdue = lastDate ? daysDiff > 0 : true;
                     const uiKey = `${tank.id}-${index}`;
                     
-                    // --- CORRECTED LOGIC FOR SIDE BUTTONS ---
-                    const gallons = parseInt(tank.size); // e.g. "55 Gallon" -> 55
+                    // --- SIDE BUTTON LOGIC ---
+                    const gallons = parseInt(tank.size);
                     const isLarge = !isNaN(gallons) && gallons > 29;
                     const isWaterChange = task.name.toLowerCase().includes("water change");
-                    const showSideButtons = isWaterChange && isLarge;
+                    
+                    // --- AQUARIUM CHECK ---
+                    const aquariumTypes = ['Freshwater', 'Saltwater', 'Cichlid', 'Coldwater', 'Brackish'];
+                    const isAquarium = aquariumTypes.includes(tank.type);
+
+                    const showSideButtons = isWaterChange && isLarge && isAquarium;
                     // ----------------------------------------
 
                     return (
                       <div key={index} className="task-item">
                         <div className="task-header">
-                          <div style={{flex: 1}}>
+                          <div>
                             <span style={{display:'block', fontWeight:600, color:'var(--text-main)'}}>{task.name}</span>
                             
-                            {/* --- NEW: LAST COMPLETED DATE DISPLAY --- */}
-                            <div style={{fontSize:'0.8rem', color:'var(--text-secondary)', marginTop:'2px'}}>
-                               Last: {lastDate ? format(lastDate, 'EEE, MMM d') : 'Never'}
+                            {/* VISIBLE LAST DATE + DAY OF WEEK */}
+                            <div style={{fontSize:'0.75rem', marginTop:'2px'}}>
+                               <span style={{color:'var(--text-secondary)', marginRight:'6px'}}>
+                                  {lastDate ? `Last: ${format(lastDate, 'EEE, MMM d')}` : 'Never'}
+                               </span>
+                               <span className={`due-text ${isOverdue ? 'red' : 'gray'}`}>
+                                  {isOverdue ? `Due ${daysDiff} days ago` : `Due in ${Math.abs(daysDiff)} days`}
+                               </span>
                             </div>
-
-                            <span className={`due-text ${isOverdue ? 'red' : 'gray'}`}>
-                              {isOverdue ? `Due ${daysDiff} days ago` : `Due in ${Math.abs(daysDiff)} days`}
-                            </span>
                           </div>
                           <button onClick={(e) => toggleHistory(e, uiKey)} style={{border:'none', background:'none', cursor:'pointer', color:'var(--text-secondary)'}}><Clock size={16} /></button>
                         </div>
@@ -852,7 +911,8 @@ const CleanDashboard = ({ tanks, onComplete, onDeleteHistory, onEditHistory, onA
                                            </div>
                                          ) : (
                                            <div style={{color:'var(--text-secondary)'}}>
-                                                <span style={{fontWeight:500}}>{format(new Date(dateStr), 'MMM d, yyyy')}</span>
+                                                {/* UPDATED: INCLUDE DAY OF WEEK IN HISTORY LIST */}
+                                                <span style={{fontWeight:500}}>{format(new Date(dateStr), 'EEE, MMM d, yyyy')}</span>
                                                 {side && <span style={{marginLeft:'8px', padding:'2px 6px', background:'var(--bg-card)', borderRadius:'4px', fontSize:'0.75rem'}}>{side}</span>}
                                            </div>
                                          )}
